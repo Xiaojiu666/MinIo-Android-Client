@@ -1,0 +1,68 @@
+[versions]
+compose = "1.4.1"
+ktx = "1.9.0"
+androidxNavigation = "2.5.3"
+c-material3 = "1.0.1"
+c-material = "1.0.1"
+c-constraintlayout = "1.0.1"
+c-activity = "1.7.0"
+c-coil = "2.2.2"
+hilt = "2.44"
+hilt-navigation-compose = "1.0.0"
+hiltExt = "1.0.0"
+
+paging = "3.1.1"
+c-paging = "1.0.0-alpha18"
+
+room-version = "2.5.1"
+
+androidxLifecycle = "2.6.1"
+
+# retrofit
+retrofit = "2.9.0"
+
+okhttpLogging = "4.10.0"
+
+accompanist = "0.30.1"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx" }
+
+compose-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "c-material3" }
+compose-material = { group = "androidx.compose.material", name = "material", version.ref = "c-material" }
+compose-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout-compose", version.ref = "c-constraintlayout" }
+compose-activity = { group = "androidx.activity", name = "activity-compose", version.ref = "c-activity" }
+compose-coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "c-coil" }
+
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
+hilt-ext-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltExt" }
+hilt-ext-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltExt" }
+
+
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
+lifecycle-viewModelCompose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }
+lifecycle-runtimeCompose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
+
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-util = { group = "androidx.compose.ui", name = "ui-util" }
+
+# retrofit
+squareup-retrofit2 = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+squareup-retrofit2-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+squareup-okhttp3-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttpLogging" }
+
+google-accompanist-navigation-animation = { group = "com.google.accompanist", name = "accompanist-navigation-animation", version.ref = "accompanist" }
+
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room-version" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room-version" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room-version" }
+room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room-version" }
+
+paging-runtime = {group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+paging-compose = {group = "androidx.paging", name = "paging-compose", version.ref = "c-paging" }
+
+[plugins]
