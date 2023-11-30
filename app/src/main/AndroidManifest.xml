@@ -15,6 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MinIoAndroidClient"
         android:usesCleartextTraffic="true"
+        android:name=".MinIoApp"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
