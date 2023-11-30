@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "MinIo-Android-Client"
 include ':app'
+include ':minio-android-sdk'
+include ':minio-xml'

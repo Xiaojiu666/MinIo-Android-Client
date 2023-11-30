@@ -39,7 +39,7 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion '1.2.0'
+        kotlinCompilerExtensionVersion compose_version
     }
     packagingOptions {
         resources {
@@ -76,10 +76,15 @@ dependencies {
     implementation(libs.paging.runtime)
     implementation(libs.paging.compose)
 
+    implementation project(path: ':minio-android-sdk')
+
+
     //Network
     implementation(libs.squareup.retrofit2)
     api(libs.squareup.retrofit2.gson)
     implementation(libs.squareup.okhttp3.logging)
+
+
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
