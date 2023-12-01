@@ -5,6 +5,14 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
+def propertiesFile = new File(rootProject.projectDir, "local.properties")
+def properties = new Properties()
+
+// 读取 local.properties 文件
+if (propertiesFile.exists()) {
+    properties.load(propertiesFile.newDataInputStream())
+}
+
 android {
     namespace 'io.minio.android'
     compileSdk 33
@@ -26,6 +34,14 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "ENDPOINT", properties.getProperty("ENDPOINT")
+            buildConfigField "String", "ACCESS_KEY", properties.getProperty("ACCESS_KEY")
+            buildConfigField "String", "SECRET_KEY", properties.getProperty("SECRET_KEY")
+        }
+        debug {
+            buildConfigField "String", "ENDPOINT", properties.getProperty("ENDPOINT")
+            buildConfigField "String", "ACCESS_KEY", properties.getProperty("ACCESS_KEY")
+            buildConfigField "String", "SECRET_KEY", properties.getProperty("SECRET_KEY")
         }
     }
     compileOptions {
@@ -47,6 +63,8 @@ android {
         }
     }
 }
+
+
 
 dependencies {
     //compose
