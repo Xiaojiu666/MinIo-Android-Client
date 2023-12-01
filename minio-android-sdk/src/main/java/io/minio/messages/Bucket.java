@@ -19,35 +19,47 @@ package io.minio.messages;
 import androidx.annotation.NonNull;
 
 import java.time.ZonedDateTime;
+
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Root;
 
-/** Helper class to denote bucket information for {@link ListAllMyBucketsResult}. */
+/**
+ * Helper class to denote bucket information for {@link ListAllMyBucketsResult}.
+ */
 @Root(name = "Bucket", strict = false)
 public class Bucket {
-  @Element(name = "Name")
-  private String name;
+    @Element(name = "Name")
+    private String name;
 
-  @Element(name = "CreationDate")
-  private ResponseDate creationDate;
+    @Element(name = "CreationDate")
+    private ResponseDate creationDate;
 
-  public Bucket() {}
+    public Bucket() {
+    }
 
-  /** Returns bucket name. */
-  public String name() {
-    return name;
-  }
+    /**
+     * Returns bucket name.
+     */
+    public String name() {
+        return name;
+    }
 
-  /** Returns creation date. */
-  public ZonedDateTime creationDate() {
-    return creationDate.zonedDateTime();
-  }
+    /**
+     * Returns creation date.
+     */
+    public ZonedDateTime creationDate() {
+        if (creationDate != null) {
+            return creationDate.zonedDateTime();
+        } else {
+            return ZonedDateTime.now();
+        }
+    }
 
-  @Override
-  public String toString() {
-    return "Bucket{" +
-            "name='" + name + '\'' +
-            ", creationDate=" + creationDate +
-            '}';
-  }
+    @Override
+    public String toString() {
+        return "Bucket{" +
+                "name='" + name + '\'' +
+                ", creationDate=" + creationDate +
+                '}';
+    }
 }

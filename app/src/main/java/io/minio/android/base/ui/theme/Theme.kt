@@ -1,4 +1,4 @@
-package io.minio.android.ui.theme
+package io.minio.android.base.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -19,7 +19,7 @@ import androidx.core.view.ViewCompat
 fun MinIoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -40,7 +40,6 @@ fun MinIoTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
         content = content
     )
 }

@@ -1,4 +1,4 @@
-package io.minio.android.ui
+package io.minio.android.base.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,10 +18,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.minio.android.R
-import io.minio.android.ui.theme.colorPrimary
-import io.minio.android.ui.theme.colorSecondary
-import io.minio.android.ui.theme.subtitle2Bold
+import io.minio.android.base.ui.theme.colorPrimary
+import io.minio.android.base.ui.theme.colorSecondary
+import io.minio.android.base.ui.theme.subtitle2Bold
 
 
 val TOOLBAR_HEIGHT = 56.dp

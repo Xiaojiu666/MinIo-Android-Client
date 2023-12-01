@@ -1,4 +1,4 @@
-package io.minio.android.ui
+package io.minio.android.base.ui
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize

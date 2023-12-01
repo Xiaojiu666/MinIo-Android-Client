@@ -57,7 +57,7 @@ public abstract class ObjectArgs extends BucketArgs {
     }
 
     @SuppressWarnings("unchecked") // Its safe to type cast to B as B is inherited by this class
-    public B object(String name) {
+    public B objectName(String name) {
       validateObjectName(name);
       operations.add(args -> args.objectName = name);
       return (B) this;

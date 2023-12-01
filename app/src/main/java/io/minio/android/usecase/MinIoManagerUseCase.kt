@@ -3,6 +3,8 @@ package io.minio.android.usecase
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
 import io.minio.Result
+import io.minio.StatObjectArgs
+import io.minio.StatObjectResponse
 import io.minio.messages.Bucket
 import io.minio.messages.Item
 import javax.inject.Inject

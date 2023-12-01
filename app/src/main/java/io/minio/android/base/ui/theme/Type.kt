@@ -1,4 +1,4 @@
-package io.minio.android.ui.theme
+package io.minio.android.base.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
