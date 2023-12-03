@@ -117,7 +117,7 @@ val body2BoldUnderline = TextStyle(
 val body3 = TextStyle(
     fontFamily =  FontFamily.Default,
     fontWeight = FontWeight.Normal,
-    fontSize = 13.sp
+    fontSize = 10.sp
 )
 val caption = TextStyle(
     fontFamily =  FontFamily.Default,

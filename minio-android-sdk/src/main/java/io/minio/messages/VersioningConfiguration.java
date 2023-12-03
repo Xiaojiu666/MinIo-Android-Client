@@ -90,4 +90,28 @@ public class VersioningConfiguration {
       return OFF;
     }
   }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public String getMfaDelete() {
+    return mfaDelete;
+  }
+
+  public void setMfaDelete(String mfaDelete) {
+    this.mfaDelete = mfaDelete;
+  }
+
+  @Override
+  public String toString() {
+    return "VersioningConfiguration{" +
+            "status='" + status + '\'' +
+            ", mfaDelete='" + mfaDelete + '\'' +
+            '}';
+  }
 }

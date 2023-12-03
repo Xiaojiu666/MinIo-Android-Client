@@ -1,46 +1,43 @@
 package io.minio.android.workflow.home
 
+import android.annotation.SuppressLint
+import android.media.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.DrawerValue
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.rememberDrawerState
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import io.minio.android.R
 import io.minio.android.base.LoadingWrapper
 import io.minio.android.base.UiStateWrapper
-import io.minio.android.base.ui.theme.body1
-import io.minio.android.base.ui.theme.body3
-import io.minio.android.base.ui.theme.colorBackground
-import io.minio.android.base.ui.theme.colorPrimary
-import io.minio.android.base.ui.theme.colorSecondary
-import io.minio.android.base.ui.theme.colorTertiary
+import io.minio.android.base.ui.theme.*
+import io.minio.android.entities.FileType
+import io.minio.android.entities.FolderItemData
 import io.minio.messages.Bucket
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -50,32 +47,64 @@ fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomePage(uiState: UiStateWrapper) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scaffoldState = rememberScaffoldState(drawerState)
+    val snackBarHostState = remember { SnackbarHostState() }
+    val scaffoldState =
+        rememberScaffoldState(drawerState = drawerState, snackbarHostState = snackBarHostState)
     var showBucketPop by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
     var bucket by remember {
         mutableStateOf(Bucket())
     }
+
     Scaffold(topBar = {
         HomeTopBar(
             bucket.name() ?: "",
             bucket.creationDate().toString(),
             onShowPop = {
                 showBucketPop = !showBucketPop
+            }, onMenuClick = {
+                coroutineScope.launch {
+                    drawerState.open()
+                }
+            })
+    }, snackbarHost = {
+        SnackbarHost(
+            hostState = snackBarHostState,
+            snackbar = {
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    action = {
+                        // Snackbar 操作按钮
+                        IconButton(onClick = {
+                            snackBarHostState.currentSnackbarData?.performAction()
+                        }) {
+                            Icon(Icons.Default.Warning, contentDescription = null)
+                        }
+                    }
+                ) {
+                    Text("")
+                }
             })
     }, drawerContent = {
         Text("Drawer Content")
     }, scaffoldState = scaffoldState, content = {
         uiState.LoadingWrapper<HomeViewModel.HomeUiState>(content = { uiState ->
+            LaunchedEffect(uiState.snackBarHostMsg) {
+                scaffoldState.snackbarHostState.showSnackbar(uiState.snackBarHostMsg)
+            }
+
+
             uiState.selectorBucket?.let {
                 bucket = it
             }
             Box(modifier = Modifier.padding(it)) {
                 if (showBucketPop) {
                     Popup(
-                        onDismissRequest = { showBucketPop = !showBucketPop }
+                        onDismissRequest = { showBucketPop = false }
                     ) {
                         LazyColumn(
                             modifier = Modifier
@@ -88,13 +117,141 @@ fun HomePage(uiState: UiStateWrapper) {
                         }
                     }
                 }
+                val pagerState = rememberPagerState()
 
-                Text(modifier = Modifier.padding(it), text = stringResource(id = R.string.app_name))
+                Column {
+                    FolderTabs(uiState.foldPage.map { it.folderTitle }) {
+                        coroutineScope.launch {
+                            pagerState.scrollToPage(it)
+                        }
+                    }
+                    HorizontalPager(
+                        pageCount = uiState.foldPage.size,
+                        state = pagerState,
+                        userScrollEnabled = false
+                    ) { currentPage ->
+                        FolderPage(uiState.foldPage[currentPage].folderPageFolderList) {
+                            uiState.onFolderSelector(it)
+                        }
+                    }
+                }
             }
         }) {
 
         }
     })
+}
+
+@Composable
+private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
+    LazyRow(modifier = Modifier.padding(10.dp)) {
+        itemsIndexed(folderNames) { index, item ->
+            FolderTabItem(item) {
+                onItemClick(index)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FolderPage(folderNames: List<FolderItemData?>, onItemClick: (FolderItemData) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(10.dp)) {
+        items(folderNames) {
+            it?.let {
+                FolderItem(it) {
+                    onItemClick(it)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FolderTabItem(folderName: String, onItemClick: () -> Unit) {
+    Text(modifier = Modifier.padding(4.dp).clickable {
+        onItemClick()
+    }, text = folderName, style = body2)
+}
+
+
+@Composable
+private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData) -> Unit) {
+    ConstraintLayout(modifier = Modifier.fillMaxWidth().clickable {
+        onItemClick(folderName)
+    }) {
+        val (image, title, subSize, createData, line) = createRefs()
+        val fileIcon = when (folderName.fileType) {
+            is FileType.Folder -> {
+                R.drawable.baseline_folder_24
+            }
+            is FileType.ImageFile -> {
+                R.drawable.baseline_image_24
+            }
+            is FileType.TextFile -> {
+                R.drawable.baseline_text_snippet_24
+            }
+        }
+
+        Image(
+            modifier = Modifier.constrainAs(image) {
+                start.linkTo(parent.start)
+                top.linkTo(parent.top)
+                bottom.linkTo(parent.bottom)
+            }.size(36.dp),
+            contentScale = ContentScale.Crop,
+            painter = painterResource(fileIcon),
+            contentDescription = null
+        )
+
+        Text(modifier = Modifier.constrainAs(title) {
+            start.linkTo(image.end, 8.dp)
+            top.linkTo(parent.top, 4.dp)
+        }, text = folderName.fileType.name, style = body2)
+
+        when (folderName.fileType) {
+            is FileType.Folder -> {
+                Text(modifier = Modifier.constrainAs(subSize) {
+                    start.linkTo(image.end, 8.dp)
+                    top.linkTo(title.bottom)
+                    bottom.linkTo(parent.bottom, 4.dp)
+                }, text = "${folderName.fileType.subSize} 项", style = body3)
+
+            }
+            is FileType.ImageFile -> {
+
+                Text(modifier = Modifier.constrainAs(subSize) {
+                    start.linkTo(image.end, 8.dp)
+                    top.linkTo(title.bottom)
+                    bottom.linkTo(parent.bottom, 4.dp)
+                }, text = folderName.fileType.fileSize, style = body3)
+
+                Text(modifier = Modifier.constrainAs(createData) {
+                    bottom.linkTo(image.bottom)
+                    end.linkTo(parent.end)
+                }, text = folderName.fileType.lastModifyData, style = body3)
+            }
+            is FileType.TextFile -> {
+
+                Text(modifier = Modifier.constrainAs(subSize) {
+                    start.linkTo(image.end, 8.dp)
+                    top.linkTo(title.bottom)
+                    bottom.linkTo(parent.bottom, 4.dp)
+                }, text = folderName.fileType.fileSize, style = body3)
+
+                Text(modifier = Modifier.constrainAs(createData) {
+                    bottom.linkTo(image.bottom)
+                    end.linkTo(parent.end)
+                }, text = folderName.fileType.lastModifyData, style = body3)
+            }
+        }
+
+    }
+}
+
+@Preview
+@Composable
+private fun preFolderItem() {
+//    FolderItem(FolderItemData("你好", 0))
 }
 
 @Composable
@@ -116,7 +273,7 @@ private fun itemBucket(it: Bucket) {
 
 
 @Composable
-fun HomeTopBar(title: String, subTitle: String, onShowPop: () -> Unit) {
+fun HomeTopBar(title: String, subTitle: String, onShowPop: () -> Unit, onMenuClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,12 +281,13 @@ fun HomeTopBar(title: String, subTitle: String, onShowPop: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(modifier = Modifier.padding(horizontal = 16.dp), onClick = {
-
+            onMenuClick()
         }) {
             Icon(Icons.Default.Menu, tint = colorSecondary(), contentDescription = null)
         }
         Row(
-            modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column() {
                 Text(text = title, style = body1, maxLines = 1, color = colorSecondary())
