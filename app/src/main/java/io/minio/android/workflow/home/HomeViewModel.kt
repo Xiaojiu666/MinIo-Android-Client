@@ -3,15 +3,16 @@ package io.minio.android.workflow.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.minio.android.base.PartUiStateWrapper
 import io.minio.android.base.UiStateWrapper
 import io.minio.android.entities.FolderItemData
 import io.minio.android.entities.FolderPage
 import io.minio.android.usecase.MinIoManagerUseCase
+import io.minio.android.util.removeElementsAfterIndex
 import io.minio.messages.Bucket
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.nio.file.Path
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,8 +20,14 @@ class HomeViewModel @Inject constructor(
     private val minIoManagerUseCase: MinIoManagerUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiStateWrapper>(
-        UiStateWrapper.Loading
+    private val _uiState = MutableStateFlow(
+        HomeUiState(
+            buckets = null,
+            selectorBucket = null,
+            pagerUiState = UiStateWrapper.Loading,
+            onFolderSelector = ::onFolderSelector,
+            onFolderTabSelector = ::onFolderTabSelector,
+        )
     )
     val uiState = _uiState.asStateFlow()
 
@@ -34,71 +41,82 @@ class HomeViewModel @Inject constructor(
                 val buckets = minIoManagerUseCase.queryBucketList()
                 if (buckets.isNotEmpty()) {
                     val selectorBucket = buckets[0]
-                    val value = HomeUiState(
-                        buckets = buckets,
-                        selectorBucket = selectorBucket,
-                        foldPage = mutableListOf(),
-                        onFolderSelector = ::onFolderSelector
-                    )
-                    _uiState.emit(value)
-                } else {
-                    _uiState.emit(UiStateWrapper.Error(NullPointerException(), ""))
-                }
-                (_uiState.value as HomeUiState).let { homeUiState ->
-                    homeUiState.selectorBucket?.let {
-                        val folder = minIoManagerUseCase.queryFolderByPath(it)
-                        emitUiStateValue<HomeUiState> {
-                            homeUiState.foldPage.add(folder)
-                            it.copy(foldPage = homeUiState.foldPage)
-                        }
+                    val folder = minIoManagerUseCase.queryFolderByPath(selectorBucket)
+                    val pages = mutableListOf<FolderPage>()
+                    pages.add(folder)
+                    val pagerUiState = PagerUiState(pages)
+
+                    emitHomeUiStateValue {
+                        it.copy(
+                            buckets = buckets,
+                            selectorBucket = selectorBucket,
+                            pagerUiState = pagerUiState
+                        )
                     }
                 }
             } catch (ex: Throwable) {
                 ex.printStackTrace()
-                _uiState.emit(UiStateWrapper.Error(ex, ""))
             }
         }
     }
 
 
-    private fun onFolderSelector(folderItem: FolderItemData) {
+    private fun onFolderSelector(folderItem: FolderItemData, nextList: MutableList<FolderPage>) {
         viewModelScope.launch {
-            (_uiState.value as HomeUiState).let { homeUiState ->
-                homeUiState.selectorBucket?.let {
-                    val folder = minIoManagerUseCase.queryFolderByPath(it, folderItem.path)
-                    if (folder.folderPageFolderList.isEmpty()) {
-                        emitUiStateValue<HomeUiState> {
-                            it.copy(snackBarHostMsg = "There are no files in the current folder ~")
-                        }
-                    } else {
-                        emitUiStateValue<HomeUiState> {
-                            val newFolderPage = mutableListOf<FolderPage>()
-                            newFolderPage.addAll(it.foldPage)
-                            newFolderPage.add(folder)
-                            it.copy(foldPage = newFolderPage)
-                        }
-                    }
+            uiState.value.selectorBucket?.let { bucket ->
+                emitHomeUiStateValue {
+                    it.copy(pagerUiState = UiStateWrapper.Loading)
+                }
+                val folder = minIoManagerUseCase.queryFolderByPath(bucket, folderItem.path)
+                val newFolderPage = mutableListOf<FolderPage>()
+                newFolderPage.addAll(nextList)
+                newFolderPage.add(folder)
+                emitHomeUiStateValue {
+                    val pagerUiState = PagerUiState(foldPage = newFolderPage)
+                    it.copy(pagerUiState = pagerUiState)
                 }
             }
         }
     }
 
-
-    private fun <T : UiStateWrapper> emitUiStateValue(uiState: (T) -> T) {
+    private fun onFolderTabSelector(index: Int) {
         viewModelScope.launch {
-            (_uiState.value as T).let {
-                _uiState.emit(uiState(it))
+            (_uiState.value.pagerUiState as PagerUiState).let { pagerUiState ->
+                val list = pagerUiState.foldPage.removeElementsAfterIndex(index)
+                emitPageUiStateValue {
+                    it.copy(foldPage = list)
+                }
             }
         }
     }
 
+    private suspend fun emitPageUiStateValue(uiState: (PagerUiState) -> PagerUiState) {
+        (_uiState.value.pagerUiState as? PagerUiState)?.let { pagerUiState ->
+            emitHomeUiStateValue {
+                it.copy(pagerUiState = uiState(pagerUiState))
+            }
+        }
+    }
+
+    private suspend fun emitHomeUiStateValue(uiState: (HomeUiState) -> HomeUiState) {
+        _uiState.emit(
+            uiState(
+                _uiState.value
+            )
+        )
+    }
+
 
     data class HomeUiState(
-        val buckets: List<Bucket>,
+        val buckets: List<Bucket>?,
         val selectorBucket: Bucket?,
-        val foldPage: MutableList<FolderPage>,
-        val onFolderSelector: (FolderItemData) -> Unit,
-        val snackBarHostMsg: String = ""
-    ) : UiStateWrapper
+        val onFolderSelector: (FolderItemData, MutableList<FolderPage>) -> Unit,
+        val onFolderTabSelector: (Int) -> Unit,
+        val pagerUiState: UiStateWrapper,
+        val snackBarHostMsg: String = "",
+    )
+
+    data class PagerUiState(val foldPage: MutableList<FolderPage>) : UiStateWrapper
 
 }
+

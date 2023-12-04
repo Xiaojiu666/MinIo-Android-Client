@@ -14,6 +14,12 @@ interface UiStateWrapper {
     data class Error(val throwable: Throwable, val message: String?) : UiStateWrapper
 }
 
+sealed interface PartUiStateWrapper {
+    object Loading : PartUiStateWrapper
+    data class Error(val throwable: Throwable, val message: String?) : PartUiStateWrapper
+    data class OnSuccessful(val data: Any): PartUiStateWrapper
+}
+
 inline fun <reified T : UiStateWrapper> MutableStateFlow<UiStateWrapper>.updateUiState(
     block: (T) -> T
 ) {

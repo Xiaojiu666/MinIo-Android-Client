@@ -37,6 +37,7 @@ import io.minio.android.base.ui.theme.*
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.messages.Bucket
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -49,7 +50,7 @@ fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HomePage(uiState: UiStateWrapper) {
+fun HomePage(uiState: HomeViewModel.HomeUiState) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val snackBarHostState = remember { SnackbarHostState() }
     val scaffoldState =
@@ -61,90 +62,92 @@ fun HomePage(uiState: UiStateWrapper) {
     }
 
     Scaffold(topBar = {
-        HomeTopBar(
-            bucket.name() ?: "",
-            bucket.creationDate().toString(),
-            onShowPop = {
-                showBucketPop = !showBucketPop
-            }, onMenuClick = {
-                coroutineScope.launch {
-                    drawerState.open()
-                }
-            })
+        HomeTopBar(bucket.name() ?: "", bucket.creationDate().toString(), onShowPop = {
+            showBucketPop = !showBucketPop
+        }, onMenuClick = {
+            coroutineScope.launch {
+                drawerState.open()
+            }
+        })
     }, snackbarHost = {
-        SnackbarHost(
-            hostState = snackBarHostState,
-            snackbar = {
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    action = {
-                        // Snackbar 操作按钮
-                        IconButton(onClick = {
-                            snackBarHostState.currentSnackbarData?.performAction()
-                        }) {
-                            Icon(Icons.Default.Warning, contentDescription = null)
-                        }
-                    }
-                ) {
-                    Text("")
+        SnackbarHost(hostState = snackBarHostState, snackbar = {
+            Snackbar(modifier = Modifier.padding(16.dp), action = {
+                // Snackbar 操作按钮
+                IconButton(onClick = {
+                    snackBarHostState.currentSnackbarData?.performAction()
+                }) {
+                    Icon(Icons.Default.Warning, contentDescription = null)
                 }
-            })
+            }) {
+                Text("")
+            }
+        })
     }, drawerContent = {
         Text("Drawer Content")
-    }, scaffoldState = scaffoldState, content = {
-        uiState.LoadingWrapper<HomeViewModel.HomeUiState>(content = { uiState ->
-            LaunchedEffect(uiState.snackBarHostMsg) {
-                scaffoldState.snackbarHostState.showSnackbar(uiState.snackBarHostMsg)
-            }
+    }, scaffoldState = scaffoldState, content = { paddingValues ->
+        LaunchedEffect(uiState.snackBarHostMsg) {
+            scaffoldState.snackbarHostState.showSnackbar(uiState.snackBarHostMsg)
+        }
 
-
-            uiState.selectorBucket?.let {
-                bucket = it
-            }
-            Box(modifier = Modifier.padding(it)) {
-                if (showBucketPop) {
-                    Popup(
-                        onDismissRequest = { showBucketPop = false }
+        uiState.selectorBucket?.let {
+            bucket = it
+        }
+        Box(modifier = Modifier.padding(paddingValues)) {
+            if (showBucketPop) {
+                Popup(onDismissRequest = { showBucketPop = false }) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colorBackground()),
                     ) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(colorBackground()),
-                        ) {
-                            items(uiState.buckets) {
+                        uiState.buckets?.let { bucketList ->
+                            items(bucketList) {
                                 itemBucket(it)
                             }
                         }
                     }
                 }
-                val pagerState = rememberPagerState()
+            }
 
+            uiState.pagerUiState.LoadingWrapper<HomeViewModel.PagerUiState>(content = { pagerUiState ->
+                val pagerState = rememberPagerState(pagerUiState.foldPage.size - 1)
                 Column {
-                    FolderTabs(uiState.foldPage.map { it.folderTitle }) {
+                    FolderTabs(pagerUiState.foldPage.map {
+                        if (it.folderTitle.endsWith("/")) {
+                            it.folderTitle.removeSuffix("/")
+                        } else {
+                            it.folderTitle
+                        }
+                    }!!.map {
+                        "$it >"
+                    }) {
                         coroutineScope.launch {
                             pagerState.scrollToPage(it)
                         }
+                        uiState.onFolderTabSelector(it)
                     }
-                    HorizontalPager(
-                        pageCount = uiState.foldPage.size,
-                        state = pagerState,
-                        userScrollEnabled = false
-                    ) { currentPage ->
-                        FolderPage(uiState.foldPage[currentPage].folderPageFolderList) {
-                            uiState.onFolderSelector(it)
+                    pagerUiState.foldPage.let { folderPages ->
+                        HorizontalPager(
+                            pageCount = folderPages.size,
+                            state = pagerState,
+                            userScrollEnabled = false
+                        ) { currentPage ->
+                            FolderPage(folderPages[currentPage].folderPageFolderList) {
+                                uiState.onFolderSelector(it,pagerUiState.foldPage)
+                            }
                         }
                     }
                 }
-            }
-        }) {
+            }) {
 
+            }
         }
     })
 }
 
 @Composable
 private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
-    LazyRow(modifier = Modifier.padding(10.dp)) {
+    LazyRow(modifier = Modifier.padding(4.dp)) {
         itemsIndexed(folderNames) { index, item ->
             FolderTabItem(item) {
                 onItemClick(index)
@@ -155,7 +158,11 @@ private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
 
 @Composable
 private fun FolderPage(folderNames: List<FolderItemData?>, onItemClick: (FolderItemData) -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(10.dp)) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp)
+    ) {
         items(folderNames) {
             it?.let {
                 FolderItem(it) {
@@ -168,17 +175,23 @@ private fun FolderPage(folderNames: List<FolderItemData?>, onItemClick: (FolderI
 
 @Composable
 private fun FolderTabItem(folderName: String, onItemClick: () -> Unit) {
-    Text(modifier = Modifier.padding(4.dp).clickable {
-        onItemClick()
-    }, text = folderName, style = body2)
+    Text(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .clickable {
+                onItemClick()
+            }, text = folderName, style = body2
+    )
 }
 
 
 @Composable
 private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData) -> Unit) {
-    ConstraintLayout(modifier = Modifier.fillMaxWidth().clickable {
-        onItemClick(folderName)
-    }) {
+    ConstraintLayout(modifier = Modifier
+        .fillMaxWidth()
+        .clickable {
+            onItemClick(folderName)
+        }) {
         val (image, title, subSize, createData, line) = createRefs()
         val fileIcon = when (folderName.fileType) {
             is FileType.Folder -> {
@@ -192,16 +205,16 @@ private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData)
             }
         }
 
-        Image(
-            modifier = Modifier.constrainAs(image) {
+        Image(modifier = Modifier
+            .constrainAs(image) {
                 start.linkTo(parent.start)
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
-            }.size(36.dp),
+            }
+            .size(36.dp),
             contentScale = ContentScale.Crop,
             painter = painterResource(fileIcon),
-            contentDescription = null
-        )
+            contentDescription = null)
 
         Text(modifier = Modifier.constrainAs(title) {
             start.linkTo(image.end, 8.dp)
@@ -258,15 +271,11 @@ private fun preFolderItem() {
 private fun itemBucket(it: Bucket) {
     Column(modifier = Modifier.padding(8.dp)) {
         Text(
-            text = "${it.name()}",
-            style = body1,
-            color = colorTertiary()
+            text = "${it.name()}", style = body1, color = colorTertiary()
         )
 
         Text(
-            text = "${it.creationDate()}",
-            style = body3,
-            color = colorTertiary()
+            text = "${it.creationDate()}", style = body3, color = colorTertiary()
         )
     }
 }
@@ -286,8 +295,7 @@ fun HomeTopBar(title: String, subTitle: String, onShowPop: () -> Unit, onMenuCli
             Icon(Icons.Default.Menu, tint = colorSecondary(), contentDescription = null)
         }
         Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically
         ) {
             Column() {
                 Text(text = title, style = body1, maxLines = 1, color = colorSecondary())

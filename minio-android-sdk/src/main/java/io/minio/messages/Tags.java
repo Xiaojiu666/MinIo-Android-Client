@@ -104,4 +104,11 @@ public class Tags {
   public Map<String, String> get() {
     return Collections.unmodifiableMap(tags == null ? new HashMap<>() : tags);
   }
+
+  @Override
+  public String toString() {
+    return "Tags{" +
+            "tags=" + tags +
+            '}';
+  }
 }
