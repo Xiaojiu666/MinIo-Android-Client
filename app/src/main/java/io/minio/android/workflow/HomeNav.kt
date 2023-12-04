@@ -14,6 +14,8 @@ import io.minio.android.workflow.home.HomeRouter
 
 const val HOME_PAGE = "home_page"
 
+const val IMAGE_PRE_PAGE = "image_pre_page"
+
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun HomeNav() {
@@ -36,6 +38,12 @@ fun HomeNav() {
     ) {
         composable(
             HOME_PAGE
+        ) {
+            HomeRouter(hiltViewModel(), navController)
+        }
+
+        composable(
+            IMAGE_PRE_PAGE
         ) {
             HomeRouter(hiltViewModel(), navController)
         }

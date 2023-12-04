@@ -118,7 +118,7 @@ fun HomePage(uiState: HomeViewModel.HomeUiState) {
                         } else {
                             it.folderTitle
                         }
-                    }!!.map {
+                    }.map {
                         "$it >"
                     }) {
                         coroutineScope.launch {

@@ -1,5 +1,6 @@
 package io.minio.android.usecase
 
+import com.google.common.primitives.UnsignedBytes.toInt
 import io.minio.*
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
@@ -11,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.bouncycastle.asn1.x500.style.RFC4519Style.title
+import org.checkerframework.checker.units.qual.t
 import java.util.*
 import javax.inject.Inject
 
@@ -63,7 +65,10 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
                     }
                     FolderItemData(type, fileRealName)
                 }
-            }
+            }.sortedWith(compareBy<FolderItemData?> {
+                println("FolderItemData ${it?.fileType?.name}")
+                it?.fileType?.name
+            })
             val title = prefix.ifEmpty {
                 bucket.name()
             }.processFileName()
