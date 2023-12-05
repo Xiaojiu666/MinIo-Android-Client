@@ -66,7 +66,10 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
                     FolderItemData(type, fileRealName)
                 }
             }
-                .sortedWith(compareBy<FolderItemData> { it.fileType }.thenBy { it.path.toLowerCase() })
+                .sortedWith(compareBy { it.fileType }).sortedWith(
+                    compareBy { it.fileType.name.toIntOrNull() })
+
+
             val title = prefix.ifEmpty {
                 bucket.name()
             }.processFileName()
