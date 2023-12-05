@@ -1,8 +1,7 @@
 package io.minio.android.entities
 
 
-
-data class FolderItemData(val fileType: FileType, val path: String)
+data class FolderItemData(val fileType: FileType, val realPath: String, val downloadUrl: String)
 
 data class FolderPage(val folderTitle: String, val folderPageFolderList: List<FolderItemData?>)
 

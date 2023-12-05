@@ -1,7 +1,9 @@
 package io.minio.android.usecase
 
+import android.os.Build
 import com.google.common.primitives.UnsignedBytes.toInt
 import io.minio.*
+import io.minio.android.BuildConfig
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.entities.FolderPage
@@ -63,7 +65,11 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
                             }
                         }
                     }
-                    FolderItemData(type, fileRealName)
+                    FolderItemData(
+                        type,
+                        fileRealName,
+                        "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName"
+                    )
                 }
             }
                 .sortedWith(compareBy { it.fileType }).sortedWith(
@@ -73,6 +79,7 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
             val title = prefix.ifEmpty {
                 bucket.name()
             }.processFileName()
+            println("folderList $folderList")
             FolderPage(title, folderList)
         }
 

@@ -34,6 +34,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         initMinIoBuckets()
+
     }
 
     private fun initMinIoBuckets() {
@@ -70,7 +71,8 @@ class HomeViewModel @Inject constructor(
                         emitHomeUiStateValue {
                             it.copy(pagerUiState = UiStateWrapper.Loading)
                         }
-                        val folder = minIoManagerUseCase.queryFolderByPath(bucket, folderItem.path)
+                        val folder =
+                            minIoManagerUseCase.queryFolderByPath(bucket, folderItem.realPath)
                         val newFolderPage = mutableListOf<FolderPage>()
                         newFolderPage.addAll(nextList)
                         newFolderPage.add(folder)
