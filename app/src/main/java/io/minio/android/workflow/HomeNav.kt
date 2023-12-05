@@ -11,6 +11,7 @@ import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import io.minio.android.workflow.home.HomeRouter
+import io.minio.android.workflow.image.ImagePrePage
 
 const val HOME_PAGE = "home_page"
 
@@ -45,7 +46,8 @@ fun HomeNav() {
         composable(
             IMAGE_PRE_PAGE
         ) {
-            HomeRouter(hiltViewModel(), navController)
+            val comicId = it.arguments?.getString("comicId") ?: ""
+            ImagePrePage(hiltViewModel(), navController)
         }
     }
 }
