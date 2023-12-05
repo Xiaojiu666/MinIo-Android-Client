@@ -1,13 +1,21 @@
 package io.minio.android.entities
 
-import java.nio.file.Path
 
 
 data class FolderItemData(val fileType: FileType, val path: String)
 
 data class FolderPage(val folderTitle: String, val folderPageFolderList: List<FolderItemData?>)
 
-sealed class FileType(val name: String) {
+sealed class FileType(val name: String) : Comparable<FileType> {
+    override fun compareTo(other: FileType): Int {
+        return compareValuesBy(this, other) {
+            when (it) {
+                is Folder -> 0
+                is ImageFile -> 1
+                is TextFile -> 2
+            }
+        }
+    }
 
     data class Folder(val folderName: String, val subSize: Int) : FileType(folderName)
 
@@ -16,5 +24,4 @@ sealed class FileType(val name: String) {
 
     data class TextFile(val textName: String, val fileSize: String, val lastModifyData: String) :
         FileType(textName)
-
 }

@@ -26,7 +26,7 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
                 ListObjectsArgs.builder().bucket(bucket.name()).prefix(prefix).recursive(false)
                     .build()
             val folderList = minioClient.listObjects(args).toList().map { result ->
-                result?.get()?.let {
+                result.get().let {
                     val fileRealName = it.objectName()
                     val extension = fileRealName.substringAfterLast('.', "")
                     val type = if (it.isDir) {
@@ -65,10 +65,8 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
                     }
                     FolderItemData(type, fileRealName)
                 }
-            }.sortedWith(compareBy<FolderItemData?> {
-                println("FolderItemData ${it?.fileType?.name}")
-                it?.fileType?.name
-            })
+            }
+                .sortedWith(compareBy<FolderItemData> { it.fileType }.thenBy { it.path.toLowerCase() })
             val title = prefix.ifEmpty {
                 bucket.name()
             }.processFileName()

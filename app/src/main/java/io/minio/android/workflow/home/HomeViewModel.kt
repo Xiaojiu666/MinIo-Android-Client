@@ -34,42 +34,8 @@ class HomeViewModel @Inject constructor(
 
     init {
         initMinIoBuckets()
-        main()
     }
 
-
-    data class FileItemNew(val name: String, val type: FileTypeNew)
-
-    enum class FileTypeNew {
-        FOLDER, IMAGE, TEXT
-    }
-
-    fun main() {
-        val files = listOf(
-            "folder/",
-            "image.jpg",
-            "1.jpg",
-            "2.jpg",
-            "comic/",
-            "3.txt"
-        )
-
-        val fileItems = files.map { createFileItem(it) }
-
-        val sortedFiles = fileItems.sortedWith(compareBy<FileItemNew> { it.type }.thenBy { it.name.toLowerCase() })
-
-        sortedFiles.forEach { println("File Name ${it.name}" ) }
-    }
-
-    fun createFileItem(name: String): FileItemNew {
-        val fileType = when {
-            name.endsWith("/") -> FileTypeNew.FOLDER
-            name.endsWith(".jpg") -> FileTypeNew.IMAGE
-            name.endsWith(".txt") -> FileTypeNew.TEXT
-            else -> throw IllegalArgumentException("Unknown file type for $name")
-        }
-        return FileItemNew(name, fileType)
-    }
     private fun initMinIoBuckets() {
         viewModelScope.launch {
             try {
