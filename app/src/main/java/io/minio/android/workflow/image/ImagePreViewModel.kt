@@ -1,24 +1,39 @@
 package io.minio.android.workflow.image
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import io.minio.android.base.UiStateWrapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 
-@HiltViewModel
-class ImagePreViewModel @Inject  constructor(
+class ImagePreViewModel @AssistedInject constructor(
+    @Assisted("imageString") private val imageString: String,
+    @Assisted("selectorIndex") private val selectorIndex: String
 ) : ViewModel() {
+
+    companion object {
+        fun provideFactory(
+            assistedFactory: ImagePreViewModelFactory,
+            imageString: String,
+            selectorIndex: String,
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return assistedFactory.create(
+                    imageString = imageString, selectorIndex = selectorIndex
+                ) as T
+            }
+        }
+    }
 
     private val _uiState = MutableStateFlow(
         ImagePreUiState(listOf())
     )
-    val uiState =
-        _uiState.asStateFlow()
+    val uiState = _uiState.asStateFlow()
 
     init {
         getMhReaderPageList()
@@ -27,7 +42,7 @@ class ImagePreViewModel @Inject  constructor(
     private fun getMhReaderPageList() {
         viewModelScope.launch {
             updateMhReaderUiState {
-                it.copy(comicList = listOf())
+                it.copy(comicList = imageString.split(","))
             }
         }
     }

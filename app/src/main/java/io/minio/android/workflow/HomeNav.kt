@@ -12,6 +12,8 @@ import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import io.minio.android.workflow.home.HomeRouter
 import io.minio.android.workflow.image.ImagePrePage
+import io.minio.android.workflow.image.ImagePreRouter
+import io.minio.android.workflow.image.imagePreViewModel
 
 const val HOME_PAGE = "home_page"
 
@@ -44,10 +46,12 @@ fun HomeNav() {
         }
 
         composable(
-            IMAGE_PRE_PAGE
+            "$IMAGE_PRE_PAGE$?images={images}&selectorIndex={selectorIndex}"
         ) {
-            val comicId = it.arguments?.getString("comicId") ?: ""
-            ImagePrePage(hiltViewModel(), navController)
+            val imageString = it.arguments?.getString("images") ?: ""
+            val selectorIndex = it.arguments?.getString("selectorIndex") ?: ""
+            val imagePreViewModel = imagePreViewModel(imageString, selectorIndex, it)
+            ImagePreRouter(imagePreViewModel, navController)
         }
     }
 }

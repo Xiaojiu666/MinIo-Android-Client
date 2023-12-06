@@ -36,6 +36,8 @@ import io.minio.android.base.UiStateWrapper
 import io.minio.android.base.ui.theme.*
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
+import io.minio.android.entities.FolderPage
+import io.minio.android.workflow.IMAGE_PRE_PAGE
 import io.minio.messages.Bucket
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -44,13 +46,15 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    HomePage(uiState)
+    HomePage(uiState, onImageFileClick = { images, index ->
+        navController.navigate("$IMAGE_PRE_PAGE\$?images=${images.joinToString(",")}&selectorIndex=$index")
+    })
 }
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HomePage(uiState: HomeViewModel.HomeUiState) {
+fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>, Int) -> Unit) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val snackBarHostState = remember { SnackbarHostState() }
     val scaffoldState =
@@ -132,8 +136,24 @@ fun HomePage(uiState: HomeViewModel.HomeUiState) {
                             state = pagerState,
                             userScrollEnabled = false
                         ) { currentPage ->
-                            FolderPage(folderPages[currentPage].folderPageFolderList) {
-                                uiState.onFolderSelector(it,pagerUiState.foldPage)
+                            FolderPage(folderPages[currentPage].folderPageFolderList) { it, index ->
+                                when (it.fileType) {
+                                    is FileType.Folder -> {
+                                        uiState.onFolderSelector(it, pagerUiState.foldPage)
+                                    }
+                                    is FileType.ImageFile -> {
+                                        val imageList =
+                                            folderPages[currentPage].folderPageFolderList.filter {
+                                                it.fileType is FileType.ImageFile
+                                            }.map {
+                                                it.downloadUrl
+                                            }
+                                        onImageFileClick(imageList, index)
+                                    }
+                                    is FileType.TextFile -> {
+
+                                    }
+                                }
                             }
                         }
                     }
@@ -157,16 +177,18 @@ private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
 }
 
 @Composable
-private fun FolderPage(folderNames: List<FolderItemData?>, onItemClick: (FolderItemData) -> Unit) {
+private fun FolderPage(
+    folderNames: List<FolderItemData?>, onItemClick: (FolderItemData, Int) -> Unit
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp)
     ) {
-        items(folderNames) {
-            it?.let {
+        itemsIndexed(folderNames) { index, floder ->
+            floder?.let {
                 FolderItem(it) {
-                    onItemClick(it)
+                    onItemClick(it, index)
                 }
             }
         }
