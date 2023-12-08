@@ -55,6 +55,10 @@ squareup-retrofit2-gson = { group = "com.squareup.retrofit2", name = "converter-
 squareup-okhttp3-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttpLogging" }
 
 google-accompanist-navigation-animation = { group = "com.google.accompanist", name = "accompanist-navigation-animation", version.ref = "accompanist" }
+google-accompanist-webview = { group = "com.google.accompanist", name = "accompanist-webview", version.ref = "accompanist" }
+google-accompanist-page = { group = "com.google.accompanist", name = "accompanist-pager", version.ref = "accompanist" }
+google-accompanist-permision = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
+google-accompanist-swiperefresh = { group = "com.google.accompanist", name = "accompanist-swiperefresh", version.ref = "accompanist" }
 
 
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room-version" }

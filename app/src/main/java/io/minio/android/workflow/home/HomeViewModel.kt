@@ -1,5 +1,9 @@
 package io.minio.android.workflow.home
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,6 +13,8 @@ import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.entities.FolderPage
 import io.minio.android.usecase.MinIoManagerUseCase
+import io.minio.android.usecase.MinIoUpLoadFileUseCase
+import io.minio.android.util.processFileName
 import io.minio.android.util.removeElementsAfterIndex
 import io.minio.messages.Bucket
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +24,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val minIoManagerUseCase: MinIoManagerUseCase
+    private val minIoManagerUseCase: MinIoManagerUseCase,
+    private val minIoUpLoadFileUseCase: MinIoUpLoadFileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -28,13 +35,14 @@ class HomeViewModel @Inject constructor(
             pagerUiState = UiStateWrapper.Loading,
             onFolderSelector = ::onFolderSelector,
             onFolderTabSelector = ::onFolderTabSelector,
-        )
+            onUploadFile = ::onUploadFile,
+
+            )
     )
     val uiState = _uiState.asStateFlow()
 
     init {
         initMinIoBuckets()
-
     }
 
     private fun initMinIoBuckets() {
@@ -102,6 +110,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun onUploadFile(filePath: String) {
+        viewModelScope.launch {
+            uiState.value.selectorBucket?.let {
+                val result =
+                    minIoUpLoadFileUseCase.upLoadFile(it, filePath, filePath.processFileName())
+            }
+        }
+    }
+
     private suspend fun emitPageUiStateValue(uiState: (PagerUiState) -> PagerUiState) {
         (_uiState.value.pagerUiState as? PagerUiState)?.let { pagerUiState ->
             emitHomeUiStateValue {
@@ -124,6 +141,7 @@ class HomeViewModel @Inject constructor(
         val selectorBucket: Bucket?,
         val onFolderSelector: (FolderItemData, MutableList<FolderPage>) -> Unit,
         val onFolderTabSelector: (Int) -> Unit,
+        val onUploadFile: (String) -> Unit,
         val pagerUiState: UiStateWrapper,
         val snackBarHostMsg: String = "",
     )

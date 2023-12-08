@@ -37,4 +37,12 @@ public class ObjectWriteResponse extends GenericResponse {
   public String versionId() {
     return versionId;
   }
+
+  @Override
+  public String toString() {
+    return "ObjectWriteResponse{" +
+            "etag='" + etag + '\'' +
+            ", versionId='" + versionId + '\'' +
+            '}';
+  }
 }

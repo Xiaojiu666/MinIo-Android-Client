@@ -16,6 +16,7 @@
 
 package io.minio;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -59,14 +60,18 @@ public class UploadObjectArgs extends PutObjectBaseArgs {
 
     private void validateFilename(String filename) {
       validateNotEmptyString(filename, "filename");
-      if (!Files.isRegularFile(Paths.get(filename))) {
-        throw new IllegalArgumentException(filename + " not a regular file");
-      }
+//      if (!Files.isRegularFile(Paths.get(filename))) {
+//        throw new IllegalArgumentException(filename + " not a regular file");
+//      }
     }
 
     public Builder filename(String filename, long partSize) throws IOException {
       validateFilename(filename);
-      final long objectSize = Files.size(Paths.get(filename));
+      File file = new File(filename);
+
+      long objectSize = file.length();
+
+//      final long objectSize = Files.size(Paths.get(filename));
 
       long[] partinfo = getPartInfo(objectSize, partSize);
       final long pSize = partinfo[0];

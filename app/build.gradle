@@ -20,7 +20,7 @@ android {
     defaultConfig {
         applicationId "io.minio.android"
         minSdk 26
-        targetSdk 33
+        targetSdk 30
         versionCode 1
         versionName "1.0"
 
@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.coil)
     implementation(libs.google.accompanist.navigation.animation)
+    implementation(libs.google.accompanist.permision)
     //lifecycle
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewModelCompose)
@@ -84,6 +85,7 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.android)
     implementation(libs.hilt.ext.compiler)
+    implementation 'androidx.documentfile:documentfile:1.0.1'
     kapt(libs.hilt.compiler)
     //room
     implementation(libs.room.runtime)
@@ -93,6 +95,7 @@ dependencies {
 
     implementation(libs.paging.runtime)
     implementation(libs.paging.compose)
+
 
     implementation project(path: ':minio-android-sdk')
 

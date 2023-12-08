@@ -1,5 +1,10 @@
 package io.minio.android.util
 
+import android.content.Context
+import android.database.Cursor
+import android.net.Uri
+import android.provider.MediaStore
+import java.io.File
 
 
 fun Long.formatFileSize(): String {
@@ -42,4 +47,29 @@ fun <T> MutableList<T>.removeElementsAfterIndex(indexToRemove: Int): MutableList
         return this
     }
     return this.subList(0, indexToRemove + 1).toMutableList()
+}
+
+fun Uri.ToFile(context: Context): File? {
+    // 检查 Uri 的 scheme
+    if ("content" == this.scheme) {
+        // 处理 content 类型的 Uri
+        return getFileFromContentUri(context, this)
+    } else if ("file" == this.scheme) {
+        // 处理 file 类型的 Uri
+        return this.path?.let { File(it) }
+    }
+    return null // 如果无法处理，返回 null 或者抛出异常，视情况而定
+}
+
+private fun getFileFromContentUri(context: Context, contentUri: Uri): File? {
+    // 使用 ContentResolver 获取真实路径
+    val projection = arrayOf(MediaStore.Images.Media.DATA)
+    val cursor: Cursor? = context.contentResolver.query(contentUri, projection, null, null, null)
+    if (cursor != null && cursor.moveToFirst()) {
+        val columnIndex: Int = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        val filePath: String = cursor.getString(columnIndex)
+        cursor.close()
+        return File(filePath)
+    }
+    return null
 }
