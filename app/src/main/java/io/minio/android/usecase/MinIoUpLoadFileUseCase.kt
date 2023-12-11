@@ -9,11 +9,16 @@ import javax.inject.Inject
 
 class MinIoUpLoadFileUseCase @Inject constructor(private val minioClient: MinioClient) {
 
-    suspend fun upLoadFile(bucket: Bucket, filePath: String, fileName: String): Boolean {
+    suspend fun upLoadFile(
+        bucket: Bucket,
+        filePath: String,
+        fileName: String,
+        originPath: String = "",
+    ): Boolean {
         return withContext(Dispatchers.IO) {
             val args = UploadObjectArgs
                 .builder()
-                .objectName(fileName)
+                .objectName(originPath + fileName)
                 .bucket(bucket.name())
                 .filename(filePath).build()
             val result = minioClient.uploadObject(args)

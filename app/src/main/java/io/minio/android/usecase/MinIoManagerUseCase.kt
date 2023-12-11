@@ -62,14 +62,16 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
                             }
                         }
                     }
+                    println("fileRealName $fileRealName")
                     FolderItemData(
                         type,
+                        fileRealName.processFileName(),
                         fileRealName,
                         "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName"
                     )
                 }
             }.sortedWith(compareBy { it.fileType }).sortedWith(
-                    compareBy { it.fileType.name.toIntOrNull() })
+                compareBy { it.fileType.name.toIntOrNull() })
 
 
             val title = prefix.ifEmpty {
@@ -78,5 +80,63 @@ class MinIoManagerUseCase @Inject constructor(private val minioClient: MinioClie
             FolderPage(title, folderList)
         }
 
+    }
+
+    suspend fun queryFoldersByPath(bucket: Bucket, filePath: String = ""): List<FolderItemData> {
+        println("queryFoldersByPath bucket : p${bucket.name()} filePath : ${filePath}")
+        return withContext(Dispatchers.IO) {
+            val args =
+                ListObjectsArgs.builder().bucket(bucket.name()).prefix(filePath).recursive(false)
+                    .build()
+            val folderList = minioClient.listObjects(args).toList().map { result ->
+                result.get().let {
+                    val fileRealName = it.objectName()
+                    val extension = fileRealName.substringAfterLast('.', "")
+                    val type = if (it.isDir) {
+                        val subFolder = minioClient.listObjects(
+                            ListObjectsArgs.builder().bucket(bucket.name()).prefix(fileRealName)
+                                .recursive(false).build()
+                        ).toList()
+                        FileType.Folder(fileRealName.processFileName(), subFolder.size)
+                    } else {
+                        when (extension.lowercase(Locale.ROOT)) {
+                            "jpg", "jpeg", "png", "gif", "webp" -> {
+                                val fileName = minioClient.statObject(
+                                    StatObjectArgs.builder().bucket(bucket.name())
+                                        .objectName(fileRealName)
+                                        .build()
+                                )
+                                FileType.ImageFile(
+                                    fileRealName.processFileName(),
+                                    fileName.size().formatFileSize(),
+                                    fileName.lastModified().toString()
+                                )
+                            }
+                            else -> {
+                                val fileName = minioClient.statObject(
+                                    StatObjectArgs.builder().bucket(bucket.name())
+                                        .objectName(fileRealName)
+                                        .build()
+                                )
+                                FileType.TextFile(
+                                    fileRealName.processFileName(),
+                                    fileName.size().formatFileSize(),
+                                    fileName.lastModified().toString(),
+                                )
+                            }
+                        }
+                    }
+                    FolderItemData(
+                        type,
+                        fileRealName.processFileName(),
+                        fileRealName,
+                        "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName"
+                    )
+                }
+            }.sortedWith(compareBy { it.fileType }).sortedWith(
+                compareBy { it.fileType.name.toIntOrNull() })
+            println("folderList $folderList")
+            folderList
+        }
     }
 }

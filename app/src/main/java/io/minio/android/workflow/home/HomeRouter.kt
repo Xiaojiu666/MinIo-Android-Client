@@ -204,45 +204,32 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             }
 
             uiState.pagerUiState.LoadingWrapper<HomeViewModel.PagerUiState>(content = { pagerUiState ->
-                val pagerState = rememberPagerState(pagerUiState.foldPage.size - 1)
                 Column {
-                    FolderTabs(pagerUiState.foldPage.map {
-                        if (it.folderTitle.endsWith("/")) {
-                            it.folderTitle.removeSuffix("/")
-                        } else {
-                            it.folderTitle
+                    pagerUiState.titlePaths?.let {
+                        FolderTabs(it) {
+                            coroutineScope.launch {
+//                                pagerState.scrollToPage(it)
+                            }
+                            uiState.onFolderTabSelector(it)
                         }
-                    }.map {
-                        "$it >"
-                    }) {
-                        coroutineScope.launch {
-                            pagerState.scrollToPage(it)
-                        }
-                        uiState.onFolderTabSelector(it)
                     }
-                    pagerUiState.foldPage.let { folderPages ->
-                        HorizontalPager(
-                            pageCount = folderPages.size,
-                            state = pagerState,
-                            userScrollEnabled = false
-                        ) { currentPage ->
-                            FolderPage(folderPages[currentPage].folderPageFolderList) { it, index ->
-                                when (it.fileType) {
-                                    is FileType.Folder -> {
-                                        uiState.onFolderSelector(it, pagerUiState.foldPage)
-                                    }
-                                    is FileType.ImageFile -> {
-                                        val imageList =
-                                            folderPages[currentPage].folderPageFolderList.filter {
-                                                it.fileType is FileType.ImageFile
-                                            }.map {
-                                                it.downloadUrl
-                                            }
-                                        onImageFileClick(imageList, index)
-                                    }
-                                    is FileType.TextFile -> {
+                    pagerUiState.folderList?.let { folders->
+                        FolderPage(folders) { it, index ->
+                            when (it.fileType) {
+                                is FileType.Folder -> {
+                                    uiState.onFolderSelector(it)
+                                }
+                                is FileType.ImageFile -> {
+                                    val imageList =
+                                        folders.filter {
+                                            it.fileType is FileType.ImageFile
+                                        }.map {
+                                            it.downloadUrl
+                                        }
+                                    onImageFileClick(imageList, index)
+                                }
+                                is FileType.TextFile -> {
 
-                                    }
                                 }
                             }
                         }
