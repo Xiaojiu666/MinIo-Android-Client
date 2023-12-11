@@ -3,52 +3,26 @@ package io.minio.android.workflow.home
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.DrawerValue
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Snackbar
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.rememberDrawerState
-import androidx.compose.material.rememberScaffoldState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -58,27 +32,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.core.content.ContextCompat.startActivity
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import io.minio.android.R
-import io.minio.android.base.LoadingWrapper
-import io.minio.android.base.ui.theme.body1
-import io.minio.android.base.ui.theme.body2
-import io.minio.android.base.ui.theme.body3
-import io.minio.android.base.ui.theme.colorBackground
-import io.minio.android.base.ui.theme.colorPrimary
-import io.minio.android.base.ui.theme.colorSecondary
-import io.minio.android.base.ui.theme.colorTertiary
+import io.minio.android.base.LoadableLayout
+import io.minio.android.base.ui.theme.*
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.workflow.IMAGE_PRE_PAGE
 import io.minio.messages.Bucket
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
 
 
 @Composable
@@ -117,7 +81,6 @@ fun getFileFromSAFUri(context: Context, uri: Uri): File? {
 }
 
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>, Int) -> Unit) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -202,18 +165,23 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                     }
                 }
             }
-
-            uiState.pagerUiState.LoadingWrapper<HomeViewModel.PagerUiState>(content = { pagerUiState ->
-                Column {
-                    pagerUiState.titlePaths?.let {
-                        FolderTabs(it) {
-                            coroutineScope.launch {
-//                                pagerState.scrollToPage(it)
-                            }
-                            uiState.onFolderTabSelector(it)
-                        }
+            Column(modifier = Modifier.fillMaxWidth()) {
+                uiState.titlePaths?.let {
+                    FolderTabs(it) {
+                        uiState.onFolderTabSelector(it)
                     }
-                    pagerUiState.folderList?.let { folders->
+                }
+
+                LoadableLayout(
+                    modifier = Modifier.fillMaxWidth(),
+                    loadableState = uiState.pagerUiState,
+                    onRetryClick = {
+
+                    },
+                    emptyLayout = {
+                    }
+                ) {
+                    it.folderList?.let { folders ->
                         FolderPage(folders) { it, index ->
                             when (it.fileType) {
                                 is FileType.Folder -> {
@@ -235,8 +203,6 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                         }
                     }
                 }
-            }) {
-
             }
         }
     })
@@ -411,7 +377,9 @@ fun HomeTopBar(
                 onShowPop()
             }) {
                 Icon(
-                    Icons.Default.ArrowDropDown, tint = colorSecondary(), contentDescription = null
+                    Icons.Default.ArrowDropDown,
+                    tint = colorSecondary(),
+                    contentDescription = null
                 )
             }
         }
