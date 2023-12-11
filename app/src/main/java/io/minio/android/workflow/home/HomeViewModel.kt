@@ -1,7 +1,9 @@
 package io.minio.android.workflow.home
 
+import android.graphics.pdf.PdfDocument.Page
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.util.newStringBuilder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.minio.android.base.LoadableState
 import io.minio.android.base.PartUiStateWrapper
@@ -23,17 +25,7 @@ class HomeViewModel @Inject constructor(
     private val minIoUpLoadFileUseCase: MinIoUpLoadFileUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        HomeUiState(
-            buckets = null,
-            selectorBucket = null,
-            selectorFilePath = "",
-            titlePaths = listOf(),
-            onFolderSelector = ::onFolderSelector,
-            onFolderTabSelector = ::onFolderTabSelector,
-            onUploadFile = ::onUploadFile
-        )
-    )
+    private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
 
 
@@ -48,12 +40,27 @@ class HomeViewModel @Inject constructor(
                 if (buckets.isNotEmpty()) {
                     val selectorBucket = buckets[0]
                     val folder = minIoManagerUseCase.queryFoldersByPath(selectorBucket)
+                    val topBarUiState = TopBarUiState(
+                        buckets = buckets,
+                        bucket = selectorBucket,
+                        onBucketSelector = { },
+                        onUploadFile = ::onUploadFile
+                    )
+                    val folderPathUiState = FolderPathUiState(
+                        listOf(), onFolderTabSelector = ::onFolderTabSelector
+                    )
+                    val pagerUiState =
+                        LoadableState.Success(
+                            PagerUiState(
+                                folderList = folder,
+                                onFolderClick = ::onFolderClick
+                            )
+                        )
                     emitHomeUiStateValue {
                         it.copy(
-                            buckets = buckets,
-                            titlePaths = listOf(selectorBucket.name()),
-                            selectorBucket = selectorBucket,
-                            pagerUiState = LoadableState.Success(PagerUiState(folderList = folder))
+                            topBarUiState = topBarUiState,
+                            folderPathUiState = folderPathUiState,
+                            pagerUiState = pagerUiState
                         )
                     }
                 }
@@ -63,11 +70,9 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
-    private fun onFolderSelector(folderItem: FolderItemData) {
+    private fun onFolderClick(folderItem: FolderItemData) {
         viewModelScope.launch {
-            val titlePaths = _uiState.value.titlePaths
-            uiState.value.selectorBucket?.let { bucket ->
+            uiState.value.topBarUiState?.bucket?.let { bucket ->
                 when (folderItem.fileType) {
                     is FileType.Folder -> {
                         emitHomeUiStateValue {
@@ -75,15 +80,22 @@ class HomeViewModel @Inject constructor(
                         }
                         val folder =
                             minIoManagerUseCase.queryFoldersByPath(bucket, folderItem.realPath)
-                        val newList = mutableListOf<String>()
-                        titlePaths?.forEach {
-                            newList.add(it)
+                        val folderPath = mutableListOf<String>()
+                        uiState.value.folderPathUiState?.folderPaths?.forEach {
+                            folderPath.add(it)
                         }
-                        newList.add(folderItem.fileName)
+                        folderPath.add(folderItem.fileName)
                         emitHomeUiStateValue {
+                            val pagerUiState = PagerUiState(
+                                folderList = folder,
+                                onFolderClick = ::onFolderClick
+                            )
+                            val folderPathUiState = it.folderPathUiState?.copy(
+                                folderPaths = folderPath
+                            )
                             it.copy(
-                                titlePaths = newList,
-                                pagerUiState = LoadableState.Success(PagerUiState(folderList = folder))
+                                pagerUiState = LoadableState.Success(pagerUiState),
+                                folderPathUiState = folderPathUiState
                             )
                         }
                     }
@@ -92,26 +104,35 @@ class HomeViewModel @Inject constructor(
                     }
                     is FileType.TextFile -> {}
                 }
-
             }
         }
     }
 
     private fun onFolderTabSelector(index: Int) {
         viewModelScope.launch {
-            val selectorBucket = _uiState.value.selectorBucket
-            var subTitlePath = _uiState.value.titlePaths?.subList(1, index + 1)
-            println("subTitlePath $subTitlePath")
-            selectorBucket?.let { bucket ->
-                val filepath = subTitlePath?.joinToString { "/" } ?: ""
+            _uiState.value.topBarUiState?.bucket?.let { bucket ->
+                val subTitlePath =
+                    _uiState.value.folderPathUiState?.folderPaths?.subList(0, index + 1) ?: listOf()
+                println("subTitlePath $subTitlePath")
+                val folderPath = newStringBuilder()
+                subTitlePath.forEach {
+                    folderPath.append("$it/")
+                }
                 val folder = minIoManagerUseCase.queryFoldersByPath(
                     bucket,
-                    filepath
+                    folderPath.toString()
                 )
                 emitHomeUiStateValue {
+                    val pagerUiState = PagerUiState(
+                        folderList = folder,
+                        onFolderClick = ::onFolderClick
+                    )
+                    val folderPathUiState = it.folderPathUiState?.copy(
+                        folderPaths = subTitlePath ?: listOf()
+                    )
                     it.copy(
-                        titlePaths = subTitlePath,
-                        pagerUiState = LoadableState.Success(PagerUiState(folderList = folder))
+                        pagerUiState = LoadableState.Success(pagerUiState),
+                        folderPathUiState = folderPathUiState
                     )
                 }
             }
@@ -120,22 +141,22 @@ class HomeViewModel @Inject constructor(
 
     private fun onUploadFile(filePath: String) {
         viewModelScope.launch {
-            uiState.value.selectorBucket?.let {
+            uiState.value.topBarUiState?.bucket?.let {
+                val originPath =
+                    uiState.value.folderPathUiState?.folderPaths?.joinToString { "/" } ?: ""
                 val result =
                     minIoUpLoadFileUseCase.upLoadFile(
                         it,
                         filePath,
                         filePath.processFileName(),
-                        originPath =
-                        uiState.value.selectorFilePath
+                        originPath = originPath
                     )
-                println("result $result ,origin path ${uiState.value.selectorFilePath}")
+                println("result $result ,origin path ${originPath}")
             }
         }
     }
 
     private suspend fun emitHomeUiStateValue(uiState: (HomeUiState) -> HomeUiState) {
-        println("uiState $uiState")
         _uiState.emit(
             uiState(
                 _uiState.value
@@ -145,19 +166,26 @@ class HomeViewModel @Inject constructor(
 
 
     data class HomeUiState(
-        val buckets: List<Bucket>?,
-        val selectorBucket: Bucket?,
-        val selectorFilePath: String,
-        val onFolderSelector: (FolderItemData) -> Unit,
-        val onFolderTabSelector: (Int) -> Unit,
-        val onUploadFile: (String) -> Unit,
+        val topBarUiState: TopBarUiState? = null,
         val pagerUiState: LoadableState<PagerUiState> = LoadableState.Loading(),
-        val snackBarHostMsg: String = "",
-        val titlePaths: List<String>?,
+        val folderPathUiState: FolderPathUiState? = null,
+    )
+
+    data class TopBarUiState(
+        val buckets: List<Bucket>?,
+        val bucket: Bucket,
+        val onBucketSelector: () -> Unit,
+        val onUploadFile: (String) -> Unit,
+    )
+
+    data class FolderPathUiState(
+        val folderPaths: List<String>,
+        val onFolderTabSelector: (Int) -> Unit
     )
 
     data class PagerUiState(
-        val folderList: List<FolderItemData>?
+        val folderList: List<FolderItemData>?,
+        val onFolderClick: (FolderItemData) -> Unit,
     )
 
 }

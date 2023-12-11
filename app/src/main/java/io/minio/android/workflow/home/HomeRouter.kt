@@ -59,8 +59,7 @@ fun getFileFromSAFUri(context: Context, uri: Uri): File? {
     val cursor = contentResolver.query(uri, null, null, null, null, null)
     cursor?.use {
         if (it.moveToFirst()) {
-            val displayNameIndex =
-                it.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+            val displayNameIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
             if (displayNameIndex != -1) {
                 val fileName = it.getString(displayNameIndex)
                 val destinationFile = File(cacheDir, fileName)
@@ -89,16 +88,14 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
         rememberScaffoldState(drawerState = drawerState, snackbarHostState = snackBarHostState)
     var showBucketPop by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    var bucket by remember {
-        mutableStateOf(Bucket())
-    }
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
-        it?.let {
-            uiState.onUploadFile(getFileFromSAFUri(context, it)?.path ?: "")
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it ->
+        it?.let { imageUri ->
+            uiState.topBarUiState?.let {
+                it.onUploadFile(getFileFromSAFUri(context, imageUri)?.path ?: "")
+            }
         }
     }
-
 
     val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf()
@@ -115,8 +112,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
 
 
     Scaffold(topBar = {
-        HomeTopBar(title = bucket.name() ?: "",
-            subTitle = bucket.creationDate().toString(),
+        HomeTopBar(title = uiState.topBarUiState?.bucket?.name() ?: "",
+            subTitle = uiState.topBarUiState?.bucket?.creationDate().toString(),
             onShowPop = {
                 showBucketPop = !showBucketPop
             },
@@ -124,7 +121,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                 coroutineScope.launch {
                     drawerState.open()
                 }
-            }, onAddClick = {
+            },
+            onAddClick = {
                 requestPermissions.launch(permissions)
             })
     }, snackbarHost = {
@@ -142,22 +140,13 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
     }, drawerContent = {
         Text("Drawer Content")
     }, scaffoldState = scaffoldState, content = { paddingValues ->
-        LaunchedEffect(uiState.snackBarHostMsg) {
-            scaffoldState.snackbarHostState.showSnackbar(uiState.snackBarHostMsg)
-        }
-
-        uiState.selectorBucket?.let {
-            bucket = it
-        }
         Box(modifier = Modifier.padding(paddingValues)) {
             if (showBucketPop) {
                 Popup(onDismissRequest = { showBucketPop = false }) {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(colorBackground()),
+                        modifier = Modifier.fillMaxWidth().background(colorBackground()),
                     ) {
-                        uiState.buckets?.let { bucketList ->
+                        uiState.topBarUiState?.buckets?.let { bucketList ->
                             items(bucketList) {
                                 itemBucket(it)
                             }
@@ -166,34 +155,40 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                 }
             }
             Column(modifier = Modifier.fillMaxWidth()) {
-                uiState.titlePaths?.let {
-                    FolderTabs(it) {
-                        uiState.onFolderTabSelector(it)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.baseline_home_24),
+                        modifier = Modifier.padding(start = 8.dp),
+                        contentDescription = ""
+                    )
+                    uiState.folderPathUiState?.folderPaths?.let {
+                        FolderTabs(it) {
+                            uiState.folderPathUiState.onFolderTabSelector(it)
+                        }
                     }
                 }
 
-                LoadableLayout(
-                    modifier = Modifier.fillMaxWidth(),
+                LoadableLayout(modifier = Modifier.fillMaxWidth(),
                     loadableState = uiState.pagerUiState,
                     onRetryClick = {
 
                     },
-                    emptyLayout = {
-                    }
-                ) {
-                    it.folderList?.let { folders ->
+                    emptyLayout = {}) { pageUiState ->
+                    pageUiState.folderList?.let { folders ->
                         FolderPage(folders) { it, index ->
                             when (it.fileType) {
                                 is FileType.Folder -> {
-                                    uiState.onFolderSelector(it)
+                                    pageUiState.onFolderClick(it)
                                 }
                                 is FileType.ImageFile -> {
-                                    val imageList =
-                                        folders.filter {
-                                            it.fileType is FileType.ImageFile
-                                        }.map {
-                                            it.downloadUrl
-                                        }
+                                    val imageList = folders.filter {
+                                        it.fileType is FileType.ImageFile
+                                    }.map {
+                                        it.downloadUrl
+                                    }
                                     onImageFileClick(imageList, index)
                                 }
                                 is FileType.TextFile -> {
@@ -224,9 +219,7 @@ private fun FolderPage(
     folderNames: List<FolderItemData?>, onItemClick: (FolderItemData, Int) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(10.dp)
+        modifier = Modifier.fillMaxSize().padding(10.dp)
     ) {
         itemsIndexed(folderNames) { index, floder ->
             floder?.let {
@@ -241,22 +234,18 @@ private fun FolderPage(
 @Composable
 private fun FolderTabItem(folderName: String, onItemClick: () -> Unit) {
     Text(
-        modifier = Modifier
-            .padding(vertical = 4.dp)
-            .clickable {
-                onItemClick()
-            }, text = folderName, style = body2
+        modifier = Modifier.padding(vertical = 4.dp).clickable {
+            onItemClick()
+        }, text = folderName, style = body2
     )
 }
 
 
 @Composable
 private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData) -> Unit) {
-    ConstraintLayout(modifier = Modifier
-        .fillMaxWidth()
-        .clickable {
-            onItemClick(folderName)
-        }) {
+    ConstraintLayout(modifier = Modifier.fillMaxWidth().clickable {
+        onItemClick(folderName)
+    }) {
         val (image, title, subSize, createData, line) = createRefs()
         val fileIcon = when (folderName.fileType) {
             is FileType.Folder -> {
@@ -270,16 +259,16 @@ private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData)
             }
         }
 
-        Image(modifier = Modifier
-            .constrainAs(image) {
+        Image(
+            modifier = Modifier.constrainAs(image) {
                 start.linkTo(parent.start)
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
-            }
-            .size(36.dp),
+            }.size(36.dp),
             contentScale = ContentScale.Crop,
             painter = painterResource(fileIcon),
-            contentDescription = null)
+            contentDescription = null
+        )
 
         Text(modifier = Modifier.constrainAs(title) {
             start.linkTo(image.end, 8.dp)
@@ -355,9 +344,7 @@ fun HomeTopBar(
     onAddClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color = colorPrimary()),
+        modifier = Modifier.fillMaxWidth().background(color = colorPrimary()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(modifier = Modifier.padding(horizontal = 16.dp), onClick = {
@@ -377,9 +364,7 @@ fun HomeTopBar(
                 onShowPop()
             }) {
                 Icon(
-                    Icons.Default.ArrowDropDown,
-                    tint = colorSecondary(),
-                    contentDescription = null
+                    Icons.Default.ArrowDropDown, tint = colorSecondary(), contentDescription = null
                 )
             }
         }
