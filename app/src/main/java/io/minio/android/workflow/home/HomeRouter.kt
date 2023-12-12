@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -144,7 +145,9 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             if (showBucketPop) {
                 Popup(onDismissRequest = { showBucketPop = false }) {
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth().background(colorBackground()),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colorBackground()),
                     ) {
                         uiState.topBarUiState?.buckets?.let { bucketList ->
                             items(bucketList) {
@@ -161,10 +164,17 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                 ) {
                     Image(
                         painter = painterResource(R.drawable.baseline_home_24),
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                uiState.folderPathUiState?.onHomeTabClick?.let { it() }
+                            },
                         contentDescription = ""
                     )
-                    uiState.folderPathUiState?.folderPaths?.let {
+                    uiState.folderPathUiState?.folderPaths?.map {
+                        "$it >> "
+                    }?.let {
                         FolderTabs(it) {
                             uiState.folderPathUiState.onFolderTabSelector(it)
                         }
@@ -219,7 +229,9 @@ private fun FolderPage(
     folderNames: List<FolderItemData?>, onItemClick: (FolderItemData, Int) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(10.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp)
     ) {
         itemsIndexed(folderNames) { index, floder ->
             floder?.let {
@@ -234,18 +246,22 @@ private fun FolderPage(
 @Composable
 private fun FolderTabItem(folderName: String, onItemClick: () -> Unit) {
     Text(
-        modifier = Modifier.padding(vertical = 4.dp).clickable {
-            onItemClick()
-        }, text = folderName, style = body2
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .clickable {
+                onItemClick()
+            }, text = folderName, style = body2, textAlign = TextAlign.Center,
     )
 }
 
 
 @Composable
 private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData) -> Unit) {
-    ConstraintLayout(modifier = Modifier.fillMaxWidth().clickable {
-        onItemClick(folderName)
-    }) {
+    ConstraintLayout(modifier = Modifier
+        .fillMaxWidth()
+        .clickable {
+            onItemClick(folderName)
+        }) {
         val (image, title, subSize, createData, line) = createRefs()
         val fileIcon = when (folderName.fileType) {
             is FileType.Folder -> {
@@ -259,16 +275,16 @@ private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData)
             }
         }
 
-        Image(
-            modifier = Modifier.constrainAs(image) {
+        Image(modifier = Modifier
+            .constrainAs(image) {
                 start.linkTo(parent.start)
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
-            }.size(36.dp),
+            }
+            .size(36.dp),
             contentScale = ContentScale.Crop,
             painter = painterResource(fileIcon),
-            contentDescription = null
-        )
+            contentDescription = null)
 
         Text(modifier = Modifier.constrainAs(title) {
             start.linkTo(image.end, 8.dp)
@@ -344,7 +360,9 @@ fun HomeTopBar(
     onAddClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().background(color = colorPrimary()),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = colorPrimary()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(modifier = Modifier.padding(horizontal = 16.dp), onClick = {

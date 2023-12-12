@@ -47,7 +47,9 @@ class HomeViewModel @Inject constructor(
                         onUploadFile = ::onUploadFile
                     )
                     val folderPathUiState = FolderPathUiState(
-                        listOf(), onFolderTabSelector = ::onFolderTabSelector
+                        listOf(),
+                        onFolderTabSelector = ::onFolderTabSelector,
+                        onHomeTabClick = ::onHomeTabClick
                     )
                     val pagerUiState =
                         LoadableState.Success(
@@ -108,12 +110,40 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun onHomeTabClick() {
+        viewModelScope.launch {
+            _uiState.value.topBarUiState?.bucket?.let { bucket ->
+                emitHomeUiStateValue {
+                    it.copy(pagerUiState = LoadableState.Loading())
+                }
+                val folder = minIoManagerUseCase.queryFoldersByPath(
+                    bucket
+                )
+                emitHomeUiStateValue {
+                    val pagerUiState = PagerUiState(
+                        folderList = folder,
+                        onFolderClick = ::onFolderClick
+                    )
+                    val folderPathUiState = it.folderPathUiState?.copy(
+                        folderPaths = listOf()
+                    )
+                    it.copy(
+                        pagerUiState = LoadableState.Success(pagerUiState),
+                        folderPathUiState = folderPathUiState
+                    )
+                }
+            }
+        }
+    }
+
     private fun onFolderTabSelector(index: Int) {
         viewModelScope.launch {
             _uiState.value.topBarUiState?.bucket?.let { bucket ->
+                emitHomeUiStateValue {
+                    it.copy(pagerUiState = LoadableState.Loading())
+                }
                 val subTitlePath =
                     _uiState.value.folderPathUiState?.folderPaths?.subList(0, index + 1) ?: listOf()
-                println("subTitlePath $subTitlePath")
                 val folderPath = newStringBuilder()
                 subTitlePath.forEach {
                     folderPath.append("$it/")
@@ -180,7 +210,8 @@ class HomeViewModel @Inject constructor(
 
     data class FolderPathUiState(
         val folderPaths: List<String>,
-        val onFolderTabSelector: (Int) -> Unit
+        val onFolderTabSelector: (Int) -> Unit,
+        val onHomeTabClick: () -> Unit,
     )
 
     data class PagerUiState(
