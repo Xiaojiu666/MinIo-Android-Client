@@ -182,6 +182,35 @@ class HomeViewModel @Inject constructor(
                         originPath = originPath
                     )
                 println("result $result ,origin path ${originPath}")
+                emitHomeUiStateValue {
+                    it.copy(pagerUiState = LoadableState.Loading())
+                }
+                updatePagerData()
+            }
+        }
+    }
+
+    private suspend fun updatePagerData() {
+        uiState.value.topBarUiState?.bucket?.let { it1 ->
+            val subTitlePath =
+                _uiState.value.folderPathUiState?.folderPaths ?: listOf()
+            val folderPath = newStringBuilder()
+            subTitlePath.forEach {
+                folderPath.append("$it/")
+            }
+            val folderList = minIoManagerUseCase.queryFoldersByPath(
+                it1,
+                folderPath.toString(),
+                false
+            )
+            emitHomeUiStateValue {
+                val pagerUiState = PagerUiState(
+                    folderList = folderList,
+                    onFolderClick = ::onFolderClick
+                )
+                it.copy(
+                    pagerUiState = LoadableState.Success(pagerUiState),
+                )
             }
         }
     }
