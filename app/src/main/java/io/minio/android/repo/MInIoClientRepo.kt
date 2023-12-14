@@ -1,7 +1,9 @@
 package io.minio.android.repo
 
+import io.minio.DeleteObjectsResponse
 import io.minio.ListObjectsArgs
 import io.minio.MinioClient
+import io.minio.RemoveObjectsArgs
 import io.minio.messages.Bucket
 import io.minio.messages.Item
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +12,7 @@ import javax.inject.Inject
 import io.minio.Result
 import io.minio.StatObjectArgs
 import io.minio.StatObjectResponse
+import io.minio.messages.DeleteObject
 import java.util.stream.Collectors.toList
 
 class MInIoClientRepo @Inject constructor(private val minioClient: MinioClient) {
@@ -40,5 +43,14 @@ class MInIoClientRepo @Inject constructor(private val minioClient: MinioClient) 
                     .build()
             )
         }
+    }
+
+    suspend fun deleteObject(bucket: Bucket) {
+        val args = RemoveObjectsArgs.builder().bucket(bucket.name()).objects(
+            listOf(
+                DeleteObject("1713409479754.jpg")
+            )
+        ).build()
+        minioClient.removeObjects(args)
     }
 }

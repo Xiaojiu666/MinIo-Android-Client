@@ -2,34 +2,49 @@ package io.minio.android.workflow.home
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-import android.content.Context
-import android.net.Uri
 import android.os.Build
-import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.*
+import androidx.compose.material.DrawerValue
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Snackbar
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.runtime.*
+import androidx.compose.material.rememberDrawerState
+import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -37,13 +52,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import io.minio.android.R
 import io.minio.android.base.LoadableLayout
-import io.minio.android.base.ui.theme.*
+import io.minio.android.base.ui.theme.body1
+import io.minio.android.base.ui.theme.body2
+import io.minio.android.base.ui.theme.body3
+import io.minio.android.base.ui.theme.colorBackground
+import io.minio.android.base.ui.theme.colorTertiary
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
+import io.minio.android.util.getFileFromSAFUri
 import io.minio.android.workflow.IMAGE_PRE_PAGE
+import io.minio.android.workflow.home.ui.HomeTopBar
 import io.minio.messages.Bucket
 import kotlinx.coroutines.launch
-import java.io.File
 
 
 @Composable
@@ -52,32 +72,6 @@ fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
     HomePage(uiState, onImageFileClick = { images, index ->
         navController.navigate("$IMAGE_PRE_PAGE\$?images=${images.joinToString(",")}&selectorIndex=$index")
     })
-}
-
-fun getFileFromSAFUri(context: Context, uri: Uri): File? {
-    val contentResolver = context.contentResolver
-    val cacheDir: File = context.cacheDir
-    val cursor = contentResolver.query(uri, null, null, null, null, null)
-    cursor?.use {
-        if (it.moveToFirst()) {
-            val displayNameIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-            if (displayNameIndex != -1) {
-                val fileName = it.getString(displayNameIndex)
-                val destinationFile = File(cacheDir, fileName)
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    destinationFile.outputStream().use { outputStream ->
-                        val buffer = ByteArray(4 * 1024)
-                        var read: Int
-                        while (inputStream.read(buffer).also { read = it } != -1) {
-                            outputStream.write(buffer, 0, read)
-                        }
-                    }
-                }
-                return destinationFile
-            }
-        }
-    }
-    return null
 }
 
 
@@ -113,7 +107,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
 
 
     Scaffold(topBar = {
-        HomeTopBar(title = uiState.topBarUiState?.bucket?.name() ?: "",
+        HomeTopBar(
+            title = uiState.topBarUiState?.bucket?.name() ?: "",
             subTitle = uiState.topBarUiState?.bucket?.creationDate().toString(),
             onShowPop = {
                 showBucketPop = !showBucketPop
@@ -125,7 +120,9 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             },
             onAddClick = {
                 requestPermissions.launch(permissions)
-            })
+            },
+            topBarModel = uiState.topBarUiState?.topBarModel
+        )
     }, snackbarHost = {
         SnackbarHost(hostState = snackBarHostState, snackbar = {
             Snackbar(modifier = Modifier.padding(16.dp), action = {
@@ -188,7 +185,7 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                     },
                     emptyLayout = {}) { pageUiState ->
                     pageUiState.folderList?.let { folders ->
-                        FolderPage(folders) { it, index ->
+                        FolderPage(folders, onItemClick = { it, index ->
                             when (it.fileType) {
                                 is FileType.Folder -> {
                                     pageUiState.onFolderClick(it)
@@ -205,13 +202,16 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
 
                                 }
                             }
-                        }
+                        }, onLongCLick = {
+                            uiState.topBarUiState?.onFolderLongClick?.let { it(TopBarModel.DELETE) }
+                        })
                     }
                 }
             }
         }
     })
 }
+
 
 @Composable
 private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
@@ -226,7 +226,9 @@ private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
 
 @Composable
 private fun FolderPage(
-    folderNames: List<FolderItemData?>, onItemClick: (FolderItemData, Int) -> Unit
+    folderNames: List<FolderItemData?>,
+    onItemClick: (FolderItemData, Int) -> Unit,
+    onLongCLick: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier
@@ -235,9 +237,11 @@ private fun FolderPage(
     ) {
         itemsIndexed(folderNames) { index, floder ->
             floder?.let {
-                FolderItem(it) {
+                FolderItem(folderName = it, onItemClick = {
                     onItemClick(it, index)
-                }
+                }, onLongCLick = {
+                    onLongCLick()
+                })
             }
         }
     }
@@ -250,17 +254,26 @@ private fun FolderTabItem(folderName: String, onItemClick: () -> Unit) {
             .padding(vertical = 4.dp)
             .clickable {
                 onItemClick()
-            }, text = folderName, style = body2, textAlign = TextAlign.Center,
+            },
+        text = folderName, style = body2, textAlign = TextAlign.Center,
     )
 }
 
 
 @Composable
-private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData) -> Unit) {
+private fun FolderItem(
+    folderName: FolderItemData,
+    onItemClick: (FolderItemData) -> Unit,
+    onLongCLick: () -> Unit = {},
+) {
     ConstraintLayout(modifier = Modifier
         .fillMaxWidth()
-        .clickable {
-            onItemClick(folderName)
+        .pointerInput(onItemClick, onLongCLick) {
+            detectTapGestures(onLongPress = {
+                onLongCLick()
+            }, onTap = {
+                onItemClick(folderName)
+            })
         }) {
         val (image, title, subSize, createData, line) = createRefs()
         val fileIcon = when (folderName.fileType) {
@@ -331,12 +344,6 @@ private fun FolderItem(folderName: FolderItemData, onItemClick: (FolderItemData)
     }
 }
 
-@Preview
-@Composable
-private fun preFolderItem() {
-//    FolderItem(FolderItemData("你好", 0))
-}
-
 @Composable
 private fun itemBucket(it: Bucket) {
     Column(modifier = Modifier.padding(8.dp)) {
@@ -351,46 +358,3 @@ private fun itemBucket(it: Bucket) {
 }
 
 
-@Composable
-fun HomeTopBar(
-    title: String,
-    subTitle: String,
-    onShowPop: () -> Unit,
-    onMenuClick: () -> Unit,
-    onAddClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color = colorPrimary()),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(modifier = Modifier.padding(horizontal = 16.dp), onClick = {
-            onMenuClick()
-        }) {
-            Icon(Icons.Default.Menu, tint = colorSecondary(), contentDescription = null)
-        }
-        Row(
-            modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column() {
-                Text(text = title, style = body1, maxLines = 1, color = colorSecondary())
-
-                Text(text = subTitle, style = body3, maxLines = 1, color = colorSecondary())
-            }
-            IconButton(modifier = Modifier.padding(8.dp), onClick = {
-                onShowPop()
-            }) {
-                Icon(
-                    Icons.Default.ArrowDropDown, tint = colorSecondary(), contentDescription = null
-                )
-            }
-        }
-
-        IconButton(modifier = Modifier.padding(horizontal = 8.dp), onClick = {
-            onAddClick()
-        }) {
-            Icon(Icons.Default.Add, tint = colorSecondary(), contentDescription = null)
-        }
-    }
-}

@@ -1,19 +1,15 @@
 package io.minio.android.usecase
 
 
-import io.minio.*
 import io.minio.android.BuildConfig
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
-import io.minio.android.entities.FolderPage
 import io.minio.android.repo.MInIoClientRepo
-import io.minio.android.repo.MinIoCacheRepo
+import io.minio.android.util.FileComparator
 import io.minio.android.util.cache.DataCache
 import io.minio.android.util.formatFileSize
 import io.minio.android.util.processFileName
 import io.minio.messages.Bucket
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
 
@@ -73,22 +69,4 @@ class MinIoManagerUseCase @Inject constructor(
         return folders
     }
 
-    class FileComparator : Comparator<FolderItemData> {
-        override fun compare(file1: FolderItemData, file2: FolderItemData): Int {
-            // 先按照文件类型排序
-            val fileType1 = file1.fileType
-            val fileType2 = file2.fileType
-            if (fileType1.getFileTypeIndex() != fileType2.getFileTypeIndex()) {
-                return fileType1.compareTo(fileType2)
-            }
-            // 对于相同类型的文件，再按照文件名排序
-            return extractNumber(fileType1.name).compareTo(extractNumber(fileType2.name))
-        }
-
-        private fun extractNumber(filename: String): Int {
-            val numberPattern = "\\d+".toRegex()
-            val matchResult = numberPattern.find(filename)
-            return matchResult?.value?.substring(0..9)?.toInt() ?: 0
-        }
-    }
 }

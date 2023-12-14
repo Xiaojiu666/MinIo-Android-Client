@@ -44,7 +44,8 @@ class HomeViewModel @Inject constructor(
                         buckets = buckets,
                         bucket = selectorBucket,
                         onBucketSelector = { },
-                        onUploadFile = ::onUploadFile
+                        onUploadFile = ::onUploadFile,
+                        onFolderLongClick = ::onFolderLongClick
                     )
                     val folderPathUiState = FolderPathUiState(
                         listOf(),
@@ -55,7 +56,7 @@ class HomeViewModel @Inject constructor(
                         LoadableState.Success(
                             PagerUiState(
                                 folderList = folder,
-                                onFolderClick = ::onFolderClick
+                                onFolderClick = ::onFolderClick,
                             )
                         )
                     emitHomeUiStateValue {
@@ -69,6 +70,15 @@ class HomeViewModel @Inject constructor(
             } catch (ex: Throwable) {
                 ex.printStackTrace()
             }
+        }
+    }
+
+    private fun onFolderLongClick(topBarModel: TopBarModel) {
+        viewModelScope.launch {
+            val topBarUiState = uiState.value.topBarUiState?.copy(topBarModel = topBarModel)
+            _uiState.emit(
+                uiState.value.copy(topBarUiState = topBarUiState)
+            )
         }
     }
 
@@ -90,7 +100,7 @@ class HomeViewModel @Inject constructor(
                         emitHomeUiStateValue {
                             val pagerUiState = PagerUiState(
                                 folderList = folder,
-                                onFolderClick = ::onFolderClick
+                                onFolderClick = ::onFolderClick,
                             )
                             val folderPathUiState = it.folderPathUiState?.copy(
                                 folderPaths = folderPath
@@ -122,7 +132,7 @@ class HomeViewModel @Inject constructor(
                 emitHomeUiStateValue {
                     val pagerUiState = PagerUiState(
                         folderList = folder,
-                        onFolderClick = ::onFolderClick
+                        onFolderClick = ::onFolderClick,
                     )
                     val folderPathUiState = it.folderPathUiState?.copy(
                         folderPaths = listOf()
@@ -155,7 +165,7 @@ class HomeViewModel @Inject constructor(
                 emitHomeUiStateValue {
                     val pagerUiState = PagerUiState(
                         folderList = folder,
-                        onFolderClick = ::onFolderClick
+                        onFolderClick = ::onFolderClick,
                     )
                     val folderPathUiState = it.folderPathUiState?.copy(
                         folderPaths = subTitlePath ?: listOf()
@@ -206,7 +216,7 @@ class HomeViewModel @Inject constructor(
             emitHomeUiStateValue {
                 val pagerUiState = PagerUiState(
                     folderList = folderList,
-                    onFolderClick = ::onFolderClick
+                    onFolderClick = ::onFolderClick,
                 )
                 it.copy(
                     pagerUiState = LoadableState.Success(pagerUiState),
@@ -224,6 +234,10 @@ class HomeViewModel @Inject constructor(
     }
 
 
+    fun updateTopBarUiState() {
+
+    }
+
     data class HomeUiState(
         val topBarUiState: TopBarUiState? = null,
         val pagerUiState: LoadableState<PagerUiState> = LoadableState.Loading(),
@@ -235,7 +249,9 @@ class HomeViewModel @Inject constructor(
         val bucket: Bucket,
         val onBucketSelector: () -> Unit,
         val onUploadFile: (String) -> Unit,
-    )
+        val topBarModel: TopBarModel = TopBarModel.INCREASE,
+        val onFolderLongClick: (TopBarModel) -> Unit,
+        )
 
     data class FolderPathUiState(
         val folderPaths: List<String>,
@@ -247,6 +263,7 @@ class HomeViewModel @Inject constructor(
         val folderList: List<FolderItemData>?,
         val onFolderClick: (FolderItemData) -> Unit,
     )
-
 }
-
+enum class TopBarModel {
+    INCREASE, DELETE
+}

@@ -3,6 +3,7 @@ package io.minio.android.util
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import java.io.File
 
@@ -70,6 +71,33 @@ private fun getFileFromContentUri(context: Context, contentUri: Uri): File? {
         val filePath: String = cursor.getString(columnIndex)
         cursor.close()
         return File(filePath)
+    }
+    return null
+}
+
+
+fun getFileFromSAFUri(context: Context, uri: Uri): File? {
+    val contentResolver = context.contentResolver
+    val cacheDir: File = context.cacheDir
+    val cursor = contentResolver.query(uri, null, null, null, null, null)
+    cursor?.use {
+        if (it.moveToFirst()) {
+            val displayNameIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+            if (displayNameIndex != -1) {
+                val fileName = it.getString(displayNameIndex)
+                val destinationFile = File(cacheDir, fileName)
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    destinationFile.outputStream().use { outputStream ->
+                        val buffer = ByteArray(4 * 1024)
+                        var read: Int
+                        while (inputStream.read(buffer).also { read = it } != -1) {
+                            outputStream.write(buffer, 0, read)
+                        }
+                    }
+                }
+                return destinationFile
+            }
+        }
     }
     return null
 }
