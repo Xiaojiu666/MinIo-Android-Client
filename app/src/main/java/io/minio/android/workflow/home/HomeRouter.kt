@@ -51,6 +51,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import io.minio.android.R
+import io.minio.android.base.DefaultLoading
 import io.minio.android.base.LoadableLayout
 import io.minio.android.base.ui.theme.body1
 import io.minio.android.base.ui.theme.body2
@@ -88,7 +89,7 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it ->
         it?.let { imageUri ->
-            uiState.topBarUiState?.let {
+            uiState.topBarUiState.let {
                 it.onUploadFile(getFileFromSAFUri(context, imageUri)?.path ?: "")
             }
         }
@@ -110,8 +111,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
 
     Scaffold(topBar = {
         HomeTopBar(
-            title = uiState.topBarUiState?.bucket?.name() ?: "",
-            subTitle = uiState.topBarUiState?.bucket?.creationDate().toString(),
+            title = uiState.topBarUiState.bucket?.name() ?: "",
+            subTitle = uiState.topBarUiState.bucket?.creationDate().toString(),
             onShowPop = {
                 showBucketPop = !showBucketPop
             },
@@ -123,9 +124,9 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             onAddClick = {
                 requestPermissions.launch(permissions)
             }, onDeleteClick = {
-                uiState.topBarUiState?.onDeleteFile?.let { it() }
+                uiState.topBarUiState.onDeleteFile()
             },
-            topBarModel = uiState.topBarUiState?.topBarModel
+            topBarModel = uiState.topBarModel
         )
     }, snackbarHost = {
         SnackbarHost(hostState = snackBarHostState, snackbar = {
@@ -146,12 +147,10 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             .padding(paddingValues)
             .clickable {
                 println("Box Click")
-                uiState.topBarUiState?.let { topBarUiState ->
-                    if (topBarUiState.topBarModel == TopBarModel.DELETE) {
-                        topBarUiState.onTopBarModelChange(
-                            TopBarModel.INCREASE
-                        )
-                    }
+                if (uiState.topBarModel == TopBarModel.DELETE) {
+                    uiState.onTopBarModelChange(
+                        TopBarModel.INCREASE
+                    )
                 }
             }) {
             if (showBucketPop) {
@@ -161,7 +160,7 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                             .fillMaxWidth()
                             .background(colorBackground()),
                     ) {
-                        uiState.topBarUiState?.buckets?.let { bucketList ->
+                        uiState.topBarUiState.buckets?.let { bucketList ->
                             items(bucketList) {
                                 ItemBucket(it)
                             }
@@ -180,57 +179,50 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                             .padding(start = 8.dp)
                             .padding(vertical = 4.dp)
                             .clickable {
-                                uiState.folderPathUiState?.onHomeTabClick?.let { it() }
+                                uiState.folderPathUiState.onHomeTabClick()
                             },
                         contentDescription = ""
                     )
-                    uiState.folderPathUiState?.folderPaths?.map {
+                    uiState.folderPathUiState.folderPaths.map {
                         "$it >> "
-                    }?.let {
+                    }.let {
                         FolderTabs(it) {
                             uiState.folderPathUiState.onFolderTabSelector(it)
                         }
                     }
                 }
-
-                LoadableLayout(modifier = Modifier.fillMaxWidth(),
-                    loadableState = uiState.pagerUiState,
-                    onRetryClick = {
-
-                    },
-                    emptyLayout = {}) { pageUiState ->
-                    pageUiState.folderList?.let { folders ->
+                if (uiState.showPagerLoading) {
+                    DefaultLoading()
+                } else {
+                    uiState.pagerUiState.folderList?.let { folders ->
                         FolderPage(folders,
-                            topBarModel = uiState.topBarUiState?.topBarModel
-                                ?: TopBarModel.INCREASE,
+                            topBarModel = uiState.topBarModel,
                             onItemClick = { it, index ->
-                                uiState.topBarUiState?.let { topBarUiState ->
-                                    if (topBarUiState.topBarModel == TopBarModel.INCREASE) {
-                                        when (it.fileType) {
-                                            is FileType.Folder -> {
-                                                pageUiState.onFolderClick(it)
-                                            }
-                                            is FileType.ImageFile -> {
-                                                val imageList = folders.filter {
-                                                    it.fileType is FileType.ImageFile
-                                                }.map {
-                                                    it.downloadUrl
-                                                }
-                                                onImageFileClick(imageList, index)
-                                            }
-                                            is FileType.TextFile -> {
-
-                                            }
+                                if (uiState.topBarModel == TopBarModel.INCREASE) {
+                                    when (it.fileType) {
+                                        is FileType.Folder -> {
+                                            uiState.pagerUiState.onFolderClick(it)
                                         }
-                                    } else {
-                                        topBarUiState.onTopBarModelChange(
-                                            TopBarModel.INCREASE
-                                        )
+                                        is FileType.ImageFile -> {
+                                            val imageList = folders.filter {
+                                                it.fileType is FileType.ImageFile
+                                            }.map {
+                                                it.downloadUrl
+                                            }
+                                            onImageFileClick(imageList, index)
+                                        }
+                                        is FileType.TextFile -> {
+
+                                        }
                                     }
+                                } else {
+                                    uiState.onTopBarModelChange(
+                                        TopBarModel.INCREASE
+                                    )
                                 }
                             },
                             onLongCLick = {
-                                uiState.topBarUiState?.onTopBarModelChange?.let { it(TopBarModel.DELETE) }
+                                uiState.onTopBarModelChange(TopBarModel.DELETE)
                             })
                     }
                 }
