@@ -69,4 +69,6 @@ class MinIoManagerUseCase @Inject constructor(
         return folders
     }
 
+    suspend fun deleteFile(bucket: Bucket)= mInIoClientRepo.deleteObject(bucket)
+
 }

@@ -48,9 +48,10 @@ class MInIoClientRepo @Inject constructor(private val minioClient: MinioClient) 
     suspend fun deleteObject(bucket: Bucket) {
         val args = RemoveObjectsArgs.builder().bucket(bucket.name()).objects(
             listOf(
-                DeleteObject("1713409479754.jpg")
+                DeleteObject("1711445727408.jpg")
             )
         ).build()
-        minioClient.removeObjects(args)
+        var result = minioClient.removeObjects(args)
+        println("removeObjects $result")
     }
 }

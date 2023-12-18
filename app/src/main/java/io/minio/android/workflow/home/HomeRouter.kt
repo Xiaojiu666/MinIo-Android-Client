@@ -122,6 +122,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             },
             onAddClick = {
                 requestPermissions.launch(permissions)
+            }, onDeleteClick = {
+                uiState.topBarUiState?.onDeleteFile?.let { it() }
             },
             topBarModel = uiState.topBarUiState?.topBarModel
         )

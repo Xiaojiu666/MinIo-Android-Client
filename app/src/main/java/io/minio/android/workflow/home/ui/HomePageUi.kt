@@ -41,7 +41,7 @@ import io.minio.messages.Bucket
 
 
 @Composable
- fun ItemBucket(it: Bucket) {
+fun ItemBucket(it: Bucket) {
     Column(modifier = Modifier.padding(8.dp)) {
         Text(
             text = "${it.name()}", style = body1, color = colorTertiary()
@@ -61,6 +61,7 @@ fun HomeTopBar(
     onShowPop: () -> Unit,
     onMenuClick: () -> Unit,
     onAddClick: () -> Unit,
+    onDeleteClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -99,7 +100,7 @@ fun HomeTopBar(
             }
             TopBarModel.DELETE -> {
                 IconButton(modifier = Modifier.padding(horizontal = 8.dp), onClick = {
-                    onAddClick()
+                    onDeleteClick()
                 }) {
                     Icon(Icons.Default.Delete, tint = colorSecondary(), contentDescription = null)
                 }
@@ -117,6 +118,7 @@ fun FolderItem(
     topBarModel: TopBarModel?,
     onItemClick: (FolderItemData) -> Unit,
     onLongCLick: () -> Unit = {},
+    onItemCheck: () -> Unit = {}
 ) {
     ConstraintLayout(modifier = Modifier
         .fillMaxWidth()
@@ -129,20 +131,18 @@ fun FolderItem(
         }) {
         val (image, title, subSize, createData, line, check) = createRefs()
 
-        Checkbox(modifier = Modifier
-            .constrainAs(check) {
-                start.linkTo(parent.start)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-                visibility = if (topBarModel == TopBarModel.INCREASE) {
-                    Visibility.Invisible
-                } else {
-                    Visibility.Visible
-                }
-            }, checked = true, onCheckedChange = {
-
+        Checkbox(modifier = Modifier.constrainAs(check) {
+            start.linkTo(parent.start)
+            top.linkTo(parent.top)
+            bottom.linkTo(parent.bottom)
+            visibility = if (topBarModel == TopBarModel.INCREASE) {
+                Visibility.Invisible
+            } else {
+                Visibility.Visible
+            }
+        }, checked = false, onCheckedChange = {
+            onItemCheck()
         })
-        Icons.Default.Face
         val fileIcon = when (folderName.fileType) {
             is FileType.Folder -> {
                 R.drawable.baseline_folder_24
