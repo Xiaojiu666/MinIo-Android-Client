@@ -22,6 +22,7 @@ fun MinIoTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    println("darkTheme $darkTheme")
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current

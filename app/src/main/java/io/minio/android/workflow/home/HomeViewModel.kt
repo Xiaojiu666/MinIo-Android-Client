@@ -45,7 +45,7 @@ class HomeViewModel @Inject constructor(
                         bucket = selectorBucket,
                         onBucketSelector = { },
                         onUploadFile = ::onUploadFile,
-                        onFolderLongClick = ::onFolderLongClick
+                        onTopBarModelChange = ::onTopBarModelChange
                     )
                     val folderPathUiState = FolderPathUiState(
                         listOf(),
@@ -73,7 +73,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun onFolderLongClick(topBarModel: TopBarModel) {
+    private fun onTopBarModelChange(topBarModel: TopBarModel) {
         viewModelScope.launch {
             val topBarUiState = uiState.value.topBarUiState?.copy(topBarModel = topBarModel)
             _uiState.emit(
@@ -250,7 +250,7 @@ class HomeViewModel @Inject constructor(
         val onBucketSelector: () -> Unit,
         val onUploadFile: (String) -> Unit,
         val topBarModel: TopBarModel = TopBarModel.INCREASE,
-        val onFolderLongClick: (TopBarModel) -> Unit,
+        val onTopBarModelChange: (TopBarModel) -> Unit,
         )
 
     data class FolderPathUiState(

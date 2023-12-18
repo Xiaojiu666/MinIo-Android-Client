@@ -61,7 +61,9 @@ import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.util.getFileFromSAFUri
 import io.minio.android.workflow.IMAGE_PRE_PAGE
+import io.minio.android.workflow.home.ui.FolderItem
 import io.minio.android.workflow.home.ui.HomeTopBar
+import io.minio.android.workflow.home.ui.ItemBucket
 import io.minio.messages.Bucket
 import kotlinx.coroutines.launch
 
@@ -138,7 +140,18 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
     }, drawerContent = {
         Text("Drawer Content")
     }, scaffoldState = scaffoldState, content = { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+        Box(modifier = Modifier
+            .padding(paddingValues)
+            .clickable {
+                println("Box Click")
+                uiState.topBarUiState?.let { topBarUiState ->
+                    if (topBarUiState.topBarModel == TopBarModel.DELETE) {
+                        topBarUiState.onTopBarModelChange(
+                            TopBarModel.INCREASE
+                        )
+                    }
+                }
+            }) {
             if (showBucketPop) {
                 Popup(onDismissRequest = { showBucketPop = false }) {
                     LazyColumn(
@@ -148,7 +161,7 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                     ) {
                         uiState.topBarUiState?.buckets?.let { bucketList ->
                             items(bucketList) {
-                                itemBucket(it)
+                                ItemBucket(it)
                             }
                         }
                     }
@@ -185,26 +198,38 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                     },
                     emptyLayout = {}) { pageUiState ->
                     pageUiState.folderList?.let { folders ->
-                        FolderPage(folders, onItemClick = { it, index ->
-                            when (it.fileType) {
-                                is FileType.Folder -> {
-                                    pageUiState.onFolderClick(it)
-                                }
-                                is FileType.ImageFile -> {
-                                    val imageList = folders.filter {
-                                        it.fileType is FileType.ImageFile
-                                    }.map {
-                                        it.downloadUrl
-                                    }
-                                    onImageFileClick(imageList, index)
-                                }
-                                is FileType.TextFile -> {
+                        FolderPage(folders,
+                            topBarModel = uiState.topBarUiState?.topBarModel
+                                ?: TopBarModel.INCREASE,
+                            onItemClick = { it, index ->
+                                uiState.topBarUiState?.let { topBarUiState ->
+                                    if (topBarUiState.topBarModel == TopBarModel.INCREASE) {
+                                        when (it.fileType) {
+                                            is FileType.Folder -> {
+                                                pageUiState.onFolderClick(it)
+                                            }
+                                            is FileType.ImageFile -> {
+                                                val imageList = folders.filter {
+                                                    it.fileType is FileType.ImageFile
+                                                }.map {
+                                                    it.downloadUrl
+                                                }
+                                                onImageFileClick(imageList, index)
+                                            }
+                                            is FileType.TextFile -> {
 
+                                            }
+                                        }
+                                    } else {
+                                        topBarUiState.onTopBarModelChange(
+                                            TopBarModel.INCREASE
+                                        )
+                                    }
                                 }
-                            }
-                        }, onLongCLick = {
-                            uiState.topBarUiState?.onFolderLongClick?.let { it(TopBarModel.DELETE) }
-                        })
+                            },
+                            onLongCLick = {
+                                uiState.topBarUiState?.onTopBarModelChange?.let { it(TopBarModel.DELETE) }
+                            })
                     }
                 }
             }
@@ -227,6 +252,7 @@ private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
 @Composable
 private fun FolderPage(
     folderNames: List<FolderItemData?>,
+    topBarModel: TopBarModel,
     onItemClick: (FolderItemData, Int) -> Unit,
     onLongCLick: () -> Unit = {},
 ) {
@@ -237,7 +263,7 @@ private fun FolderPage(
     ) {
         itemsIndexed(folderNames) { index, floder ->
             floder?.let {
-                FolderItem(folderName = it, onItemClick = {
+                FolderItem(folderName = it, topBarModel = topBarModel, onItemClick = {
                     onItemClick(it, index)
                 }, onLongCLick = {
                     onLongCLick()
@@ -260,101 +286,6 @@ private fun FolderTabItem(folderName: String, onItemClick: () -> Unit) {
 }
 
 
-@Composable
-private fun FolderItem(
-    folderName: FolderItemData,
-    onItemClick: (FolderItemData) -> Unit,
-    onLongCLick: () -> Unit = {},
-) {
-    ConstraintLayout(modifier = Modifier
-        .fillMaxWidth()
-        .pointerInput(onItemClick, onLongCLick) {
-            detectTapGestures(onLongPress = {
-                onLongCLick()
-            }, onTap = {
-                onItemClick(folderName)
-            })
-        }) {
-        val (image, title, subSize, createData, line) = createRefs()
-        val fileIcon = when (folderName.fileType) {
-            is FileType.Folder -> {
-                R.drawable.baseline_folder_24
-            }
-            is FileType.ImageFile -> {
-                R.drawable.baseline_image_24
-            }
-            is FileType.TextFile -> {
-                R.drawable.baseline_text_snippet_24
-            }
-        }
 
-        Image(modifier = Modifier
-            .constrainAs(image) {
-                start.linkTo(parent.start)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-            }
-            .size(36.dp),
-            contentScale = ContentScale.Crop,
-            painter = painterResource(fileIcon),
-            contentDescription = null)
-
-        Text(modifier = Modifier.constrainAs(title) {
-            start.linkTo(image.end, 8.dp)
-            top.linkTo(parent.top, 4.dp)
-        }, text = folderName.fileType.name, style = body2)
-
-        when (folderName.fileType) {
-            is FileType.Folder -> {
-                Text(modifier = Modifier.constrainAs(subSize) {
-                    start.linkTo(image.end, 8.dp)
-                    top.linkTo(title.bottom)
-                    bottom.linkTo(parent.bottom, 4.dp)
-                }, text = "${folderName.fileType.subSize} 项", style = body3)
-
-            }
-            is FileType.ImageFile -> {
-
-                Text(modifier = Modifier.constrainAs(subSize) {
-                    start.linkTo(image.end, 8.dp)
-                    top.linkTo(title.bottom)
-                    bottom.linkTo(parent.bottom, 4.dp)
-                }, text = folderName.fileType.fileSize, style = body3)
-
-                Text(modifier = Modifier.constrainAs(createData) {
-                    bottom.linkTo(image.bottom)
-                    end.linkTo(parent.end)
-                }, text = folderName.fileType.lastModifyData, style = body3)
-            }
-            is FileType.TextFile -> {
-
-                Text(modifier = Modifier.constrainAs(subSize) {
-                    start.linkTo(image.end, 8.dp)
-                    top.linkTo(title.bottom)
-                    bottom.linkTo(parent.bottom, 4.dp)
-                }, text = folderName.fileType.fileSize, style = body3)
-
-                Text(modifier = Modifier.constrainAs(createData) {
-                    bottom.linkTo(image.bottom)
-                    end.linkTo(parent.end)
-                }, text = folderName.fileType.lastModifyData, style = body3)
-            }
-        }
-
-    }
-}
-
-@Composable
-private fun itemBucket(it: Bucket) {
-    Column(modifier = Modifier.padding(8.dp)) {
-        Text(
-            text = "${it.name()}", style = body1, color = colorTertiary()
-        )
-
-        Text(
-            text = "${it.creationDate()}", style = body3, color = colorTertiary()
-        )
-    }
-}
 
 
