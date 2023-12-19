@@ -13,6 +13,7 @@ import io.minio.Result
 import io.minio.StatObjectArgs
 import io.minio.StatObjectResponse
 import io.minio.messages.DeleteObject
+import java.io.File
 import java.util.stream.Collectors.toList
 
 class MInIoClientRepo @Inject constructor(private val minioClient: MinioClient) {
@@ -45,11 +46,11 @@ class MInIoClientRepo @Inject constructor(private val minioClient: MinioClient) 
         }
     }
 
-    suspend fun deleteObject(bucket: Bucket) {
+    suspend fun deleteObject(bucket: Bucket, files: List<String>) {
         val args = RemoveObjectsArgs.builder().bucket(bucket.name()).objects(
-            listOf(
-                DeleteObject("/1713409479754.jpg")
-            )
+            files.map {
+                DeleteObject(it)
+            }
         ).build()
         var result = minioClient.removeObjects(args).toList()
         println("removeObjects ${result.toString()}")

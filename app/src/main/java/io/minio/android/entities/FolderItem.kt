@@ -5,7 +5,9 @@ data class FolderItemData(
     val fileType: FileType,
     val fileName: String,
     val realPath: String,
-    val downloadUrl: String
+    val downloadUrl: String,
+    val tag: String,
+    val checked: Boolean = false
 )
 
 

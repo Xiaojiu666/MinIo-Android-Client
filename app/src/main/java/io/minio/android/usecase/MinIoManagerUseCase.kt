@@ -62,13 +62,16 @@ class MinIoManagerUseCase @Inject constructor(
                 type,
                 fileRealName.processFileName(),
                 fileRealName,
-                "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName"
+                "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName",
+                it.etag() ?: ""
             )
         }.sortedWith(FileComparator())
         dataCache.put("${bucket.name()}$filePath", folders)
+        println("queryFoldersByPath folders : ${folders}")
         return folders
     }
 
-    suspend fun deleteFile(bucket: Bucket)= mInIoClientRepo.deleteObject(bucket)
+    suspend fun deleteFile(bucket: Bucket, deleteList: List<String>) =
+        mInIoClientRepo.deleteObject(bucket, deleteList)
 
 }

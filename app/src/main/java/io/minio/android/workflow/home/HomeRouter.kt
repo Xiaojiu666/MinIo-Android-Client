@@ -8,14 +8,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -40,24 +38,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import io.minio.android.R
 import io.minio.android.base.DefaultLoading
-import io.minio.android.base.LoadableLayout
-import io.minio.android.base.ui.theme.body1
 import io.minio.android.base.ui.theme.body2
-import io.minio.android.base.ui.theme.body3
 import io.minio.android.base.ui.theme.colorBackground
-import io.minio.android.base.ui.theme.colorTertiary
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.util.getFileFromSAFUri
@@ -65,7 +56,6 @@ import io.minio.android.workflow.IMAGE_PRE_PAGE
 import io.minio.android.workflow.home.ui.FolderItem
 import io.minio.android.workflow.home.ui.HomeTopBar
 import io.minio.android.workflow.home.ui.ItemBucket
-import io.minio.messages.Bucket
 import kotlinx.coroutines.launch
 
 
@@ -123,7 +113,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
             },
             onAddClick = {
                 requestPermissions.launch(permissions)
-            }, onDeleteClick = {
+            },
+            onDeleteClick = {
                 uiState.topBarUiState.onDeleteFile()
             },
             topBarModel = uiState.topBarModel
@@ -195,7 +186,8 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                     DefaultLoading()
                 } else {
                     uiState.pagerUiState.folderList?.let { folders ->
-                        FolderPage(folders,
+                        FolderPage(
+                            uiState = uiState.pagerUiState,
                             topBarModel = uiState.topBarModel,
                             onItemClick = { it, index ->
                                 if (uiState.topBarModel == TopBarModel.INCREASE) {
@@ -223,6 +215,9 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                             },
                             onLongCLick = {
                                 uiState.onTopBarModelChange(TopBarModel.DELETE)
+                            },
+                            onItemCheck = {
+                                uiState.pagerUiState.onUpdateSelectorFolders(it)
                             })
                     }
                 }
@@ -245,23 +240,32 @@ private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
 
 @Composable
 private fun FolderPage(
-    folderNames: List<FolderItemData?>,
+    uiState: HomeViewModel.PagerUiState,
     topBarModel: TopBarModel,
     onItemClick: (FolderItemData, Int) -> Unit,
     onLongCLick: () -> Unit = {},
+    onItemCheck: (FolderItemData) -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
-        itemsIndexed(folderNames) { index, floder ->
-            floder?.let {
-                FolderItem(folderName = it, topBarModel = topBarModel, onItemClick = {
-                    onItemClick(it, index)
-                }, onLongCLick = {
-                    onLongCLick()
-                })
+        itemsIndexed(uiState.folderList!!) { index, floder ->
+            floder.let {
+                val folder = uiState.updatePagerUiState(it)
+                println("folder $folder")
+                FolderItem(
+                    folderItem = folder,
+                    topBarModel = topBarModel,
+                    onItemClick = {
+                        onItemClick(it, index)
+                    },
+                    onLongCLick = {
+                        onLongCLick()
+                    },
+                    onItemCheck = onItemCheck
+                )
             }
         }
     }

@@ -114,11 +114,11 @@ fun HomeTopBar(
 
 @Composable
 fun FolderItem(
-    folderName: FolderItemData,
+    folderItem: FolderItemData,
     topBarModel: TopBarModel?,
     onItemClick: (FolderItemData) -> Unit,
     onLongCLick: () -> Unit = {},
-    onItemCheck: () -> Unit = {}
+    onItemCheck: (FolderItemData) -> Unit = {}
 ) {
     ConstraintLayout(modifier = Modifier
         .fillMaxWidth()
@@ -126,7 +126,7 @@ fun FolderItem(
             detectTapGestures(onLongPress = {
                 onLongCLick()
             }, onTap = {
-                onItemClick(folderName)
+                onItemClick(folderItem)
             })
         }) {
         val (image, title, subSize, createData, line, check) = createRefs()
@@ -140,10 +140,10 @@ fun FolderItem(
             } else {
                 Visibility.Visible
             }
-        }, checked = false, onCheckedChange = {
-            onItemCheck()
+        }, checked = folderItem.checked, onCheckedChange = {
+            onItemCheck(folderItem)
         })
-        val fileIcon = when (folderName.fileType) {
+        val fileIcon = when (folderItem.fileType) {
             is FileType.Folder -> {
                 R.drawable.baseline_folder_24
             }
@@ -175,15 +175,15 @@ fun FolderItem(
         Text(modifier = Modifier.constrainAs(title) {
             start.linkTo(image.end, 8.dp)
             top.linkTo(parent.top, 4.dp)
-        }, text = folderName.fileType.name, style = body2)
+        }, text = folderItem.fileType.name, style = body2)
 
-        when (folderName.fileType) {
+        when (folderItem.fileType) {
             is FileType.Folder -> {
                 Text(modifier = Modifier.constrainAs(subSize) {
                     start.linkTo(image.end, 8.dp)
                     top.linkTo(title.bottom)
                     bottom.linkTo(parent.bottom, 4.dp)
-                }, text = "${folderName.fileType.subSize} 项", style = body3)
+                }, text = "${folderItem.fileType.subSize} 项", style = body3)
 
             }
             is FileType.ImageFile -> {
@@ -192,12 +192,12 @@ fun FolderItem(
                     start.linkTo(image.end, 8.dp)
                     top.linkTo(title.bottom)
                     bottom.linkTo(parent.bottom, 4.dp)
-                }, text = folderName.fileType.fileSize, style = body3)
+                }, text = folderItem.fileType.fileSize, style = body3)
 
                 Text(modifier = Modifier.constrainAs(createData) {
                     bottom.linkTo(image.bottom)
                     end.linkTo(parent.end)
-                }, text = folderName.fileType.lastModifyData, style = body3)
+                }, text = folderItem.fileType.lastModifyData, style = body3)
             }
             is FileType.TextFile -> {
 
@@ -205,12 +205,12 @@ fun FolderItem(
                     start.linkTo(image.end, 8.dp)
                     top.linkTo(title.bottom)
                     bottom.linkTo(parent.bottom, 4.dp)
-                }, text = folderName.fileType.fileSize, style = body3)
+                }, text = folderItem.fileType.fileSize, style = body3)
 
                 Text(modifier = Modifier.constrainAs(createData) {
                     bottom.linkTo(image.bottom)
                     end.linkTo(parent.end)
-                }, text = folderName.fileType.lastModifyData, style = body3)
+                }, text = folderItem.fileType.lastModifyData, style = body3)
             }
         }
 
