@@ -115,7 +115,7 @@ fun HomeTopBar(
 @Composable
 fun FolderItem(
     folderItem: FolderItemData,
-    topBarModel: TopBarModel?,
+    topBarModel: TopBarModel,
     onItemClick: (FolderItemData) -> Unit,
     onLongCLick: () -> Unit = {},
     onItemCheck: (FolderItemData) -> Unit = {}

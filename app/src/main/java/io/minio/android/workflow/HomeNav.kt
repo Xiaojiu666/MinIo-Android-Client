@@ -11,16 +11,13 @@ import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import io.minio.android.workflow.home.HomeRouter
-import io.minio.android.workflow.image.ImagePrePage
 import io.minio.android.workflow.image.ImagePreRouter
 import io.minio.android.workflow.image.imagePreViewModel
 import io.minio.android.workflow.text.TextPreRouter
 import io.minio.android.workflow.text.textPreViewModel
 
 const val HOME_PAGE = "home_page"
-
 const val IMAGE_PRE_PAGE = "image_pre_page"
-
 const val TEXT_PRE_PAGE = "text_pre_page"
 
 @OptIn(ExperimentalAnimationApi::class)

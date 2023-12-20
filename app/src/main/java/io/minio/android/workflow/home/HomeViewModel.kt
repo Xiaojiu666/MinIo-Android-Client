@@ -9,6 +9,7 @@ import io.minio.android.base.UiStateWrapper
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.repo.MinioApiRepo
+import io.minio.android.ui.SnackBarType
 import io.minio.android.usecase.MinIoManagerUseCase
 import io.minio.android.usecase.MinIoUpLoadFileUseCase
 import io.minio.android.util.processFileName
@@ -41,7 +42,7 @@ class HomeViewModel @Inject constructor(
             ), pagerUiState = PagerUiState(
                 onFolderClick = ::onFolderClick,
                 onUpdateSelectorFolders = ::onUpdateSelectorFolders
-            )
+            ), snackBarUiState = SnackBarUiState("", SnackBarType.NORMAL)
         )
     )
 
@@ -209,7 +210,7 @@ class HomeViewModel @Inject constructor(
 
     private fun onUploadFile(filePath: String) {
         viewModelScope.launch {
-            uiState.value.topBarUiState.bucket?.let {
+            uiState.value.topBarUiState.bucket?.let { it ->
                 val originPath =
                     uiState.value.folderPathUiState.folderPaths.joinToString { "/" }
                 minIoUpLoadFileUseCase.upLoadFile(
@@ -219,6 +220,9 @@ class HomeViewModel @Inject constructor(
                     originPath = originPath
                 )
                 updatePagerData()
+                emitSnackBarUiStateValue {
+                    it.copy("上传成功", SnackBarType.SUCCESSFUL)
+                }
             }
         }
     }
@@ -229,6 +233,9 @@ class HomeViewModel @Inject constructor(
                 val deleteFiles = uiState.value.pagerUiState.selectorFolders
                 minIoManagerUseCase.deleteFile(it, deleteFiles)
                 updatePagerData()
+                emitSnackBarUiStateValue {
+                    it.copy("删除成功", SnackBarType.FAIL)
+                }
             }
         }
     }
@@ -251,6 +258,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun emitSnackBarUiStateValue(snackBarUiState: (SnackBarUiState) -> SnackBarUiState) {
+        emitHomeUiStateValue {
+            it.copy(
+                snackBarUiState = snackBarUiState(
+                    _uiState.value.snackBarUiState
+                )
+            )
+        }
+    }
 
     private suspend fun emitFolderUiStateValue(pagerUiState: (PagerUiState) -> PagerUiState) {
         emitHomeUiStateValue {
@@ -295,6 +311,7 @@ class HomeViewModel @Inject constructor(
         val topBarUiState: TopBarUiState,
         val folderPathUiState: FolderPathUiState,
         val pagerUiState: PagerUiState,
+        val snackBarUiState: SnackBarUiState,
         val showPagerLoading: Boolean = false,
         val onTopBarModelChange: (TopBarModel) -> Unit,
         val topBarModel: TopBarModel = TopBarModel.INCREASE
@@ -331,8 +348,11 @@ class HomeViewModel @Inject constructor(
             return folderItemData
         }
     }
+
+    data class SnackBarUiState(val msg: String, val snackBarType: SnackBarType)
 }
 
 enum class TopBarModel {
     INCREASE, DELETE
 }
+

@@ -22,6 +22,7 @@ import androidx.compose.material.DrawerValue
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
+import androidx.compose.material.ScaffoldState
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.rememberDrawerState
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +53,8 @@ import io.minio.android.base.ui.theme.body2
 import io.minio.android.base.ui.theme.colorBackground
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
+import io.minio.android.ui.NormalSnackBar
+import io.minio.android.ui.SnackBarType
 import io.minio.android.util.getFileFromSAFUri
 import io.minio.android.workflow.IMAGE_PRE_PAGE
 import io.minio.android.workflow.TEXT_PRE_PAGE
@@ -63,13 +67,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    HomePage(uiState, onImageFileClick = { images, index ->
-        navController.navigate("$IMAGE_PRE_PAGE\$?images=${images.joinToString(",")}&selectorIndex=$index")
-    }, onTextFileClick = {
-        navController.navigate("$TEXT_PRE_PAGE\$?fileUrl=${it}")
-    })
+    HomePage(uiState = uiState,
+        onImageFileClick = { images, index ->
+            navController.navigate("$IMAGE_PRE_PAGE\$?images=${images.joinToString(",")}&selectorIndex=$index")
+        }, onTextFileClick = {
+            navController.navigate("$TEXT_PRE_PAGE\$?fileUrl=${it}")
+        })
 }
-
 
 @Composable
 fun HomePage(
@@ -81,6 +85,7 @@ fun HomePage(
     val snackBarHostState = remember { SnackbarHostState() }
     val scaffoldState =
         rememberScaffoldState(drawerState = drawerState, snackbarHostState = snackBarHostState)
+
     var showBucketPop by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -104,7 +109,7 @@ fun HomePage(
                 launcher.launch("*/*")
             }
         }
-
+    HandleSnackBarMsg(uiState.snackBarUiState, scaffoldState)
 
     Scaffold(topBar = {
         HomeTopBar(
@@ -128,15 +133,7 @@ fun HomePage(
         )
     }, snackbarHost = {
         SnackbarHost(hostState = snackBarHostState, snackbar = {
-            Snackbar(modifier = Modifier.padding(16.dp), action = {
-                IconButton(onClick = {
-                    snackBarHostState.currentSnackbarData?.performAction()
-                }) {
-                    Icon(Icons.Default.Warning, contentDescription = null)
-                }
-            }) {
-                Text("")
-            }
+            NormalSnackBar(it.message, uiState.snackBarUiState.snackBarType)
         })
     }, drawerContent = {
         Text("Drawer Content")
@@ -193,8 +190,7 @@ fun HomePage(
                     DefaultLoading()
                 } else {
                     uiState.pagerUiState.folderList?.let { folders ->
-                        FolderPage(
-                            uiState = uiState.pagerUiState,
+                        FolderPage(uiState = uiState.pagerUiState,
                             topBarModel = uiState.topBarModel,
                             onItemClick = { it, index ->
                                 if (uiState.topBarModel == TopBarModel.INCREASE) {
@@ -233,6 +229,24 @@ fun HomePage(
     })
 }
 
+@Composable
+fun HandleSnackBarMsg(
+    snackBarUiState: HomeViewModel.SnackBarUiState,
+    scaffoldState: ScaffoldState
+) {
+    LaunchedEffect(snackBarUiState.snackBarType) {
+        when(snackBarUiState.snackBarType){
+            SnackBarType.SUCCESSFUL,
+            SnackBarType.FAIL -> {
+                scaffoldState.snackbarHostState.showSnackbar(snackBarUiState.msg)
+            }
+            SnackBarType.NORMAL ->{
+
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun FolderTabs(folderNames: List<String>, onItemClick: (Int) -> Unit) {
@@ -262,16 +276,11 @@ private fun FolderPage(
             floder.let {
                 val folder = uiState.updatePagerUiState(it)
                 println("folder $folder")
-                FolderItem(
-                    folderItem = folder,
-                    topBarModel = topBarModel,
-                    onItemClick = {
-                        onItemClick(it, index)
-                    },
-                    onLongCLick = {
-                        onLongCLick()
-                    },
-                    onItemCheck = onItemCheck
+                FolderItem(folderItem = folder, topBarModel = topBarModel, onItemClick = {
+                    onItemClick(it, index)
+                }, onLongCLick = {
+                    onLongCLick()
+                }, onItemCheck = onItemCheck
                 )
             }
         }
