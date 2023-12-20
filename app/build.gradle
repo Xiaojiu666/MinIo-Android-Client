@@ -98,10 +98,9 @@ dependencies {
 
 
     implementation project(path: ':minio-android-sdk')
-
-
     //Network
     implementation(libs.squareup.retrofit2)
+    api(libs.squareup.retrofit2.scalars)
     api(libs.squareup.retrofit2.gson)
     implementation(libs.squareup.okhttp3.logging)
 

@@ -53,6 +53,7 @@ import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.util.getFileFromSAFUri
 import io.minio.android.workflow.IMAGE_PRE_PAGE
+import io.minio.android.workflow.TEXT_PRE_PAGE
 import io.minio.android.workflow.home.ui.FolderItem
 import io.minio.android.workflow.home.ui.HomeTopBar
 import io.minio.android.workflow.home.ui.ItemBucket
@@ -64,12 +65,18 @@ fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     HomePage(uiState, onImageFileClick = { images, index ->
         navController.navigate("$IMAGE_PRE_PAGE\$?images=${images.joinToString(",")}&selectorIndex=$index")
+    }, onTextFileClick = {
+        navController.navigate("$TEXT_PRE_PAGE\$?fileUrl=${it}")
     })
 }
 
 
 @Composable
-fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>, Int) -> Unit) {
+fun HomePage(
+    uiState: HomeViewModel.HomeUiState,
+    onImageFileClick: (List<String>, Int) -> Unit,
+    onTextFileClick: (String) -> Unit
+) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val snackBarHostState = remember { SnackbarHostState() }
     val scaffoldState =
@@ -204,7 +211,7 @@ fun HomePage(uiState: HomeViewModel.HomeUiState, onImageFileClick: (List<String>
                                             onImageFileClick(imageList, index)
                                         }
                                         is FileType.TextFile -> {
-
+                                            onTextFileClick(it.downloadUrl)
                                         }
                                     }
                                 } else {

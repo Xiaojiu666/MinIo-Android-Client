@@ -8,6 +8,7 @@ import io.minio.android.base.PartUiStateWrapper
 import io.minio.android.base.UiStateWrapper
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
+import io.minio.android.repo.MinioApiRepo
 import io.minio.android.usecase.MinIoManagerUseCase
 import io.minio.android.usecase.MinIoUpLoadFileUseCase
 import io.minio.android.util.processFileName
@@ -22,6 +23,7 @@ import kotlin.reflect.KSuspendFunction1
 class HomeViewModel @Inject constructor(
     private val minIoManagerUseCase: MinIoManagerUseCase,
     private val minIoUpLoadFileUseCase: MinIoUpLoadFileUseCase,
+    val minioApiRepo: MinioApiRepo,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -54,6 +56,7 @@ class HomeViewModel @Inject constructor(
     private fun initMinIoBuckets() {
         viewModelScope.launch {
             try {
+                minioApiRepo.downLoadTxtFile("http://59.110.154.87:9000/comic/Test/111/Hello word.txt")
                 val buckets = minIoManagerUseCase.queryBucketList()
                 if (buckets.isNotEmpty()) {
                     val selectorBucket = buckets[0]

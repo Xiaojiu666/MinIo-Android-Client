@@ -45,7 +45,6 @@ class MInIoClientRepo @Inject constructor(private val minioClient: MinioClient) 
             )
         }
     }
-
     suspend fun deleteObject(bucket: Bucket, files: List<String>) {
         val args = RemoveObjectsArgs.builder().bucket(bucket.name()).objects(
             files.map {
