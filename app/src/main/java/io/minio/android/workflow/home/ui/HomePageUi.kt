@@ -2,6 +2,7 @@ package io.minio.android.workflow.home.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,14 +42,18 @@ import io.minio.messages.Bucket
 
 
 @Composable
-fun ItemBucket(it: Bucket) {
-    Column(modifier = Modifier.padding(8.dp)) {
+fun ItemBucket(bucket: Bucket, onBucketItemClick: (Bucket) -> Unit) {
+    Column(modifier = Modifier
+        .padding(8.dp)
+        .clickable {
+            onBucketItemClick(bucket)
+        }) {
         Text(
-            text = "${it.name()}", style = body1, color = colorTertiary()
+            text = bucket.name(), style = body1, color = colorTertiary()
         )
 
         Text(
-            text = "${it.creationDate()}", style = body3, color = colorTertiary()
+            text = "${bucket.creationDate()}", style = body3, color = colorTertiary()
         )
     }
 }

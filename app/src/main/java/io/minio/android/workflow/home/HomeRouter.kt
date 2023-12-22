@@ -157,7 +157,10 @@ fun HomePage(
                     ) {
                         uiState.topBarUiState.buckets?.let { bucketList ->
                             items(bucketList) {
-                                ItemBucket(it)
+                                ItemBucket(bucket = it, onBucketItemClick = {
+                                    showBucketPop = false
+                                    uiState.topBarUiState.onUpdateBucket(it)
+                                })
                             }
                         }
                     }
@@ -235,12 +238,12 @@ fun HandleSnackBarMsg(
     scaffoldState: ScaffoldState
 ) {
     LaunchedEffect(snackBarUiState.snackBarType) {
-        when(snackBarUiState.snackBarType){
+        when (snackBarUiState.snackBarType) {
             SnackBarType.SUCCESSFUL,
             SnackBarType.FAIL -> {
                 scaffoldState.snackbarHostState.showSnackbar(snackBarUiState.msg)
             }
-            SnackBarType.NORMAL ->{
+            SnackBarType.NORMAL -> {
 
             }
         }

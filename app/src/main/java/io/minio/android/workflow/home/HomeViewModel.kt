@@ -33,7 +33,7 @@ class HomeViewModel @Inject constructor(
             topBarUiState = TopBarUiState(
                 onBucketSelector = { },
                 onUploadFile = ::onUploadFile,
-                onDeleteFile = ::onDeleteFile
+                onDeleteFile = ::onDeleteFile, onUpdateBucket = ::onUpdateBucket
             ),
             folderPathUiState = FolderPathUiState(
                 folderPaths = listOf(),
@@ -81,6 +81,15 @@ class HomeViewModel @Inject constructor(
             } catch (ex: Throwable) {
                 ex.printStackTrace()
             }
+        }
+    }
+
+    private fun onUpdateBucket(bucket: Bucket) {
+        viewModelScope.launch {
+            emitTopBarUiStateValue {
+                it.copy(bucket = bucket)
+            }
+            updatePagerData()
         }
     }
 
@@ -321,6 +330,7 @@ class HomeViewModel @Inject constructor(
         val buckets: List<Bucket>? = null,
         val bucket: Bucket? = null,
         val onBucketSelector: () -> Unit,
+        val onUpdateBucket: (Bucket) -> Unit,
         val onUploadFile: (String) -> Unit,
         val onDeleteFile: () -> Unit,
     )
