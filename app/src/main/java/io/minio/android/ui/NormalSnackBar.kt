@@ -1,7 +1,9 @@
 package io.minio.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -36,18 +38,20 @@ fun NormalSnackBar(
     ) {
         Row(
             modifier = Modifier
-                .background(color = Color.LightGray, shape = RoundedCornerShape(size = 6.dp))
+                .background(color = Color.DarkGray, shape = RoundedCornerShape(size = 6.dp))
                 .padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement =Arrangement.spacedBy(4.dp)
         ) {
             when (snackBarType) {
                 SnackBarType.FAIL -> {
-                    Icon(Icons.Default.Warning, contentDescription = null)
+                    Icon(Icons.Default.Warning, contentDescription = null,tint = Color.White)
                 }
                 SnackBarType.NORMAL -> {
 
                 }
                 SnackBarType.SUCCESSFUL -> {
-                    Icon(Icons.Default.Done, contentDescription = null)
+                    Icon(Icons.Default.Done, contentDescription = null,tint = Color.White)
                 }
             }
             Text(
