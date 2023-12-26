@@ -37,6 +37,7 @@ import io.minio.android.base.ui.theme.colorSecondary
 import io.minio.android.base.ui.theme.colorTertiary
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
+import io.minio.android.util.formatFileSize
 import io.minio.android.workflow.home.TopBarModel
 import io.minio.messages.Bucket
 
@@ -149,14 +150,17 @@ fun FolderItem(
             onItemCheck(folderItem)
         })
         val fileIcon = when (folderItem.fileType) {
-            is FileType.Folder -> {
+            FileType.FOLDER -> {
                 R.drawable.baseline_folder_24
             }
-            is FileType.ImageFile -> {
+            FileType.IMAGE_FILE -> {
                 R.drawable.baseline_image_24
             }
-            is FileType.TextFile -> {
+            FileType.TEXT_FILE -> {
                 R.drawable.baseline_text_snippet_24
+            }
+            FileType.VIDEO_FILE -> {
+                R.drawable.baseline_featured_video_24
             }
         }
 
@@ -180,44 +184,31 @@ fun FolderItem(
         Text(modifier = Modifier.constrainAs(title) {
             start.linkTo(image.end, 8.dp)
             top.linkTo(parent.top, 4.dp)
-        }, text = folderItem.fileType.name, style = body2)
+        }, text = folderItem.fileName, style = body2)
 
         when (folderItem.fileType) {
-            is FileType.Folder -> {
+            FileType.FOLDER -> {
                 Text(modifier = Modifier.constrainAs(subSize) {
                     start.linkTo(image.end, 8.dp)
                     top.linkTo(title.bottom)
                     bottom.linkTo(parent.bottom, 4.dp)
-                }, text = "${folderItem.fileType.subSize} 项", style = body3)
+                }, text = "${folderItem.subSize} 项", style = body3)
 
             }
-            is FileType.ImageFile -> {
-
+            FileType.VIDEO_FILE,
+            FileType.TEXT_FILE,
+            FileType.IMAGE_FILE -> {
                 Text(modifier = Modifier.constrainAs(subSize) {
                     start.linkTo(image.end, 8.dp)
                     top.linkTo(title.bottom)
                     bottom.linkTo(parent.bottom, 4.dp)
-                }, text = folderItem.fileType.fileSize, style = body3)
+                }, text = folderItem.fileSize.formatFileSize(), style = body3)
 
                 Text(modifier = Modifier.constrainAs(createData) {
                     bottom.linkTo(image.bottom)
                     end.linkTo(parent.end)
-                }, text = folderItem.fileType.lastModifyData, style = body3)
-            }
-            is FileType.TextFile -> {
-
-                Text(modifier = Modifier.constrainAs(subSize) {
-                    start.linkTo(image.end, 8.dp)
-                    top.linkTo(title.bottom)
-                    bottom.linkTo(parent.bottom, 4.dp)
-                }, text = folderItem.fileType.fileSize, style = body3)
-
-                Text(modifier = Modifier.constrainAs(createData) {
-                    bottom.linkTo(image.bottom)
-                    end.linkTo(parent.end)
-                }, text = folderItem.fileType.lastModifyData, style = body3)
+                }, text = folderItem.lastModifierTime, style = body3)
             }
         }
-
     }
 }

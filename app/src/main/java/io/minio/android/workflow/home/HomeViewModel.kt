@@ -105,7 +105,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             uiState.value.topBarUiState.bucket?.let { bucket ->
                 when (folderItem.fileType) {
-                    is FileType.Folder -> {
+                     FileType.FOLDER -> {
                         emitHomeUiStateValue {
                             it.copy(showPagerLoading = true)
                         }
@@ -128,10 +128,7 @@ class HomeViewModel @Inject constructor(
                             it.copy(showPagerLoading = false, topBarModel = TopBarModel.INCREASE)
                         }
                     }
-                    is FileType.ImageFile -> {
-
-                    }
-                    is FileType.TextFile -> {}
+                    else -> {}
                 }
             }
         }

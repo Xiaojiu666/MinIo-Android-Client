@@ -199,19 +199,22 @@ fun HomePage(
                             onItemClick = { it, index ->
                                 if (uiState.topBarModel == TopBarModel.INCREASE) {
                                     when (it.fileType) {
-                                        is FileType.Folder -> {
+                                         FileType.FOLDER -> {
                                             uiState.pagerUiState.onFolderClick(it)
                                         }
-                                        is FileType.ImageFile -> {
+                                         FileType.IMAGE_FILE -> {
                                             val imageList = folders.filter {
-                                                it.fileType is FileType.ImageFile
+                                                it.fileType.index==FileType.IMAGE_FILE.index
                                             }.map {
                                                 it.downloadUrl
                                             }
                                             onImageFileClick(imageList, index)
                                         }
-                                        is FileType.TextFile -> {
+                                         FileType.TEXT_FILE -> {
                                             onTextFileClick(it.downloadUrl)
+                                        }
+                                        else -> {
+
                                         }
                                     }
                                 } else {

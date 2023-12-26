@@ -32,46 +32,47 @@ class MinIoManagerUseCase @Inject constructor(
         }
         val folders = mInIoClientRepo.queryListObject(bucket, filePath).map {
             val fileRealName = it.objectName()
-            val extension = fileRealName.substringAfterLast('.', "")
-            val type = if (it.isDir) {
-                val subFolder = mInIoClientRepo.queryListObject(
+            val extension = fileRealName.substringAfterLast('.', "").filterFileType()
+            if (it.isDir) {
+               val subFolder = mInIoClientRepo.queryListObject(
                     bucket, fileRealName
-                ).toList()
-                FileType.Folder(fileRealName.processFileName(), subFolder.size)
+                ).toList().size
+                FolderItemData(
+                    FileType.FOLDER,
+                    fileRealName.processFileName(),
+                    realPath = fileRealName,
+                    downloadUrl = "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName",
+                    subSize = subFolder,
+                )
             } else {
-                when (extension.lowercase(Locale.ROOT)) {
-                    "jpg", "jpeg", "png", "gif", "webp" -> {
-                        val fileName = mInIoClientRepo.queryObjectState(bucket, fileRealName)
-                        FileType.ImageFile(
-                            fileRealName.processFileName(),
-                            fileName.size().formatFileSize(),
-                            fileName.lastModified().toString()
-                        )
-                    }
-                    else -> {
-                        val fileName = mInIoClientRepo.queryObjectState(bucket, fileRealName)
-                        FileType.TextFile(
-                            fileRealName.processFileName(),
-                            fileName.size().formatFileSize(),
-                            fileName.lastModified().toString(),
-                        )
-                    }
-                }
+                val fileState = mInIoClientRepo.queryObjectState(bucket, fileRealName)
+                FolderItemData(
+                    extension,
+                    fileRealName.processFileName(),
+                    realPath = fileRealName,
+                    downloadUrl = "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName",
+                    lastModifierTime = fileState.lastModified().toString(),
+                    tag = fileState.etag() ?: "",
+                    fileSize = fileState.size()
+                )
             }
-            FolderItemData(
-                type,
-                fileRealName.processFileName(),
-                fileRealName,
-                "${BuildConfig.ENDPOINT}/${bucket.name()}/$fileRealName",
-                it.etag() ?: ""
-            )
         }.sortedWith(FileComparator())
         dataCache.put("${bucket.name()}$filePath", folders)
-        println("queryFoldersByPath folders : ${folders}")
+        println("queryFoldersByPath folders : $folders")
         return folders
     }
 
     suspend fun deleteFile(bucket: Bucket, deleteList: List<String>) =
         mInIoClientRepo.deleteObject(bucket, deleteList)
+
+
+    private fun String.filterFileType(): FileType {
+        return when (this) {
+            "txt", "log", "xml", "json" -> FileType.TEXT_FILE
+            "jpg", "jpeg", "png", "gif" -> FileType.IMAGE_FILE
+            "mp4", "3gp", "avi", "mkv" -> FileType.VIDEO_FILE
+            else -> FileType.TEXT_FILE
+        }
+    }
 
 }

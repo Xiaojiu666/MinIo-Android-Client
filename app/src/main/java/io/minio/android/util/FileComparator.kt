@@ -7,7 +7,7 @@ class FileComparator: Comparator<FolderItemData> {
         // 先按照文件类型排序
         val fileType1 = file1.fileType
         val fileType2 = file2.fileType
-        if (fileType1.getFileTypeIndex() != fileType2.getFileTypeIndex()) {
+        if (fileType1.index != fileType2.index) {
             return fileType1.compareTo(fileType2)
         }
         // 对于相同类型的文件，再按照文件名排序
