@@ -53,6 +53,7 @@ import io.minio.android.base.ui.theme.body2
 import io.minio.android.base.ui.theme.colorBackground
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
+import io.minio.android.ui.FileEmptyPage
 import io.minio.android.ui.NormalSnackBar
 import io.minio.android.ui.SnackBarType
 import io.minio.android.util.getFileFromSAFUri
@@ -270,21 +271,27 @@ private fun FolderPage(
     onLongCLick: () -> Unit = {},
     onItemCheck: (FolderItemData) -> Unit = {},
 ) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp)
-    ) {
-        itemsIndexed(uiState.folderList!!) { index, floder ->
-            floder.let {
-                val folder = uiState.updatePagerUiState(it)
-                println("folder $folder")
-                FolderItem(folderItem = folder, topBarModel = topBarModel, onItemClick = {
-                    onItemClick(it, index)
-                }, onLongCLick = {
-                    onLongCLick()
-                }, onItemCheck = onItemCheck
-                )
+    if (uiState.folderList.isNullOrEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            FileEmptyPage()
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp)
+        ) {
+            itemsIndexed(uiState.folderList) { index, floder ->
+                floder.let {
+                    val folder = uiState.updatePagerUiState(it)
+                    println("folder $folder")
+                    FolderItem(folderItem = folder, topBarModel = topBarModel, onItemClick = {
+                        onItemClick(it, index)
+                    }, onLongCLick = {
+                        onLongCLick()
+                    }, onItemCheck = onItemCheck
+                    )
+                }
             }
         }
     }
