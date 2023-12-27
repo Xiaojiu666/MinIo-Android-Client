@@ -104,7 +104,7 @@ dependencies {
     api(libs.squareup.retrofit2.gson)
     implementation(libs.squareup.okhttp3.logging)
 
-
+    implementation(libs.google.android.exoplayer)
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

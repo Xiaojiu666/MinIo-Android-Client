@@ -59,6 +59,7 @@ import io.minio.android.ui.SnackBarType
 import io.minio.android.util.getFileFromSAFUri
 import io.minio.android.workflow.IMAGE_PRE_PAGE
 import io.minio.android.workflow.TEXT_PRE_PAGE
+import io.minio.android.workflow.VIDEO_PRE_PAGE
 import io.minio.android.workflow.home.ui.FolderItem
 import io.minio.android.workflow.home.ui.HomeTopBar
 import io.minio.android.workflow.home.ui.ItemBucket
@@ -73,6 +74,8 @@ fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
             navController.navigate("$IMAGE_PRE_PAGE\$?images=${images.joinToString(",")}&selectorIndex=$index")
         }, onTextFileClick = {
             navController.navigate("$TEXT_PRE_PAGE\$?fileUrl=${it}")
+        }, onVideoClick = {
+            navController.navigate("$VIDEO_PRE_PAGE\$?fileUrl=${it}")
         })
 }
 
@@ -80,7 +83,8 @@ fun HomeRouter(viewModel: HomeViewModel, navController: NavController) {
 fun HomePage(
     uiState: HomeViewModel.HomeUiState,
     onImageFileClick: (List<String>, Int) -> Unit,
-    onTextFileClick: (String) -> Unit
+    onTextFileClick: (String) -> Unit,
+    onVideoClick: (String) -> Unit
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val snackBarHostState = remember { SnackbarHostState() }
@@ -199,19 +203,22 @@ fun HomePage(
                             onItemClick = { it, index ->
                                 if (uiState.topBarModel == TopBarModel.INCREASE) {
                                     when (it.fileType) {
-                                         FileType.FOLDER -> {
+                                        FileType.FOLDER -> {
                                             uiState.pagerUiState.onFolderClick(it)
                                         }
-                                         FileType.IMAGE_FILE -> {
+                                        FileType.IMAGE_FILE -> {
                                             val imageList = folders.filter {
-                                                it.fileType.index==FileType.IMAGE_FILE.index
+                                                it.fileType.index == FileType.IMAGE_FILE.index
                                             }.map {
                                                 it.downloadUrl
                                             }
                                             onImageFileClick(imageList, index)
                                         }
-                                         FileType.TEXT_FILE -> {
+                                        FileType.TEXT_FILE -> {
                                             onTextFileClick(it.downloadUrl)
+                                        }
+                                        FileType.VIDEO_FILE->{
+                                            onVideoClick(it.downloadUrl)
                                         }
                                         else -> {
 

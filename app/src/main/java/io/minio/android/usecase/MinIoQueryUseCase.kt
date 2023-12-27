@@ -7,13 +7,11 @@ import io.minio.android.entities.FolderItemData
 import io.minio.android.repo.MInIoClientRepo
 import io.minio.android.util.FileComparator
 import io.minio.android.util.cache.DataCache
-import io.minio.android.util.formatFileSize
 import io.minio.android.util.processFileName
 import io.minio.messages.Bucket
-import java.util.Locale
 import javax.inject.Inject
 
-class MinIoManagerUseCase @Inject constructor(
+class MinIoQueryUseCase @Inject constructor(
     private val mInIoClientRepo: MInIoClientRepo,
     private val dataCache: DataCache
 ) {
@@ -25,7 +23,7 @@ class MinIoManagerUseCase @Inject constructor(
         filePath: String = "",
         cache: Boolean = true
     ): List<FolderItemData> {
-        println("queryFoldersByPath bucket : p${bucket.name()} filePath : ${filePath}")
+        println("queryFoldersByPath bucket : ${bucket.name()} ,filePath : $filePath")
         val cacheData = dataCache.get<List<FolderItemData>>("${bucket.name()}$filePath")
         if (cacheData != null && cache) {
             return cacheData
@@ -34,7 +32,7 @@ class MinIoManagerUseCase @Inject constructor(
             val fileRealName = it.objectName()
             val extension = fileRealName.substringAfterLast('.', "").filterFileType()
             if (it.isDir) {
-               val subFolder = mInIoClientRepo.queryListObject(
+                val subFolder = mInIoClientRepo.queryListObject(
                     bucket, fileRealName
                 ).toList().size
                 FolderItemData(
@@ -62,15 +60,14 @@ class MinIoManagerUseCase @Inject constructor(
         return folders
     }
 
-    suspend fun deleteFile(bucket: Bucket, deleteList: List<String>) =
-        mInIoClientRepo.deleteObject(bucket, deleteList)
+
 
 
     private fun String.filterFileType(): FileType {
         return when (this) {
             "txt", "log", "xml", "json" -> FileType.TEXT_FILE
             "jpg", "jpeg", "png", "gif" -> FileType.IMAGE_FILE
-            "mp4", "3gp", "avi", "mkv" -> FileType.VIDEO_FILE
+            "mp4","MP4","MOV", "3gp", "avi", "mkv" -> FileType.VIDEO_FILE
             else -> FileType.TEXT_FILE
         }
     }

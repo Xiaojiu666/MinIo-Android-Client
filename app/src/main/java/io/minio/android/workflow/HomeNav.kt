@@ -15,10 +15,13 @@ import io.minio.android.workflow.image.ImagePreRouter
 import io.minio.android.workflow.image.imagePreViewModel
 import io.minio.android.workflow.text.TextPreRouter
 import io.minio.android.workflow.text.textPreViewModel
+import io.minio.android.workflow.video.VideoPlayPage
+import io.minio.android.workflow.video.videoPreViewModel
 
 const val HOME_PAGE = "home_page"
 const val IMAGE_PRE_PAGE = "image_pre_page"
 const val TEXT_PRE_PAGE = "text_pre_page"
+const val VIDEO_PRE_PAGE = "video_pre_page"
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -65,6 +68,13 @@ fun HomeNav() {
                     viewModelStoreOwner = it
                 )
             )
+        }
+        composable(
+            "$VIDEO_PRE_PAGE$?fileUrl={fileUrl}"
+        ) {
+            val fileUrl = it.arguments?.getString("fileUrl") ?: ""
+            val videoPreView = videoPreViewModel(fileUrl, it)
+            VideoPlayPage(videoPreView)
         }
     }
 }

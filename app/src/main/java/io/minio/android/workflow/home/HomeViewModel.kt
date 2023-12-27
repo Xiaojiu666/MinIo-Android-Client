@@ -4,13 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.util.newStringBuilder
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.minio.android.base.PartUiStateWrapper
-import io.minio.android.base.UiStateWrapper
 import io.minio.android.entities.FileType
 import io.minio.android.entities.FolderItemData
 import io.minio.android.repo.MinioApiRepo
 import io.minio.android.ui.SnackBarType
-import io.minio.android.usecase.MinIoManagerUseCase
+import io.minio.android.usecase.MinIoDeleteUseCase
+import io.minio.android.usecase.MinIoQueryUseCase
 import io.minio.android.usecase.MinIoUpLoadFileUseCase
 import io.minio.android.util.processFileName
 import io.minio.messages.Bucket
@@ -18,13 +17,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.reflect.KSuspendFunction1
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val minIoManagerUseCase: MinIoManagerUseCase,
+    private val minIoQueryUseCase: MinIoQueryUseCase,
     private val minIoUpLoadFileUseCase: MinIoUpLoadFileUseCase,
-    val minioApiRepo: MinioApiRepo,
+    private val minIoDeleteUseCase: MinIoDeleteUseCase,
+    private val minioApiRepo: MinioApiRepo,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -58,7 +57,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 minioApiRepo.downLoadTxtFile("http://59.110.154.87:9000/comic/Test/111/Hello word.txt")
-                val buckets = minIoManagerUseCase.queryBucketList()
+                val buckets = minIoQueryUseCase.queryBucketList()
                 if (buckets.isNotEmpty()) {
                     val selectorBucket = buckets[0]
                     emitTopBarUiStateValue {
@@ -70,7 +69,7 @@ class HomeViewModel @Inject constructor(
                     emitHomeUiStateValue {
                         it.copy(showPagerLoading = true)
                     }
-                    val folder = minIoManagerUseCase.queryFoldersByPath(selectorBucket)
+                    val folder = minIoQueryUseCase.queryFoldersByPath(selectorBucket)
                     emitFolderUiStateValue {
                         it.copy(folderList = folder)
                     }
@@ -110,7 +109,7 @@ class HomeViewModel @Inject constructor(
                             it.copy(showPagerLoading = true)
                         }
                         val folder =
-                            minIoManagerUseCase.queryFoldersByPath(bucket, folderItem.realPath)
+                            minIoQueryUseCase.queryFoldersByPath(bucket, folderItem.realPath)
                         val folderPath = mutableListOf<String>()
                         uiState.value.folderPathUiState.folderPaths.forEach {
                             folderPath.add(it)
@@ -137,7 +136,7 @@ class HomeViewModel @Inject constructor(
     private fun onHomeTabClick() {
         viewModelScope.launch {
             _uiState.value.topBarUiState.bucket?.let { bucket ->
-                val folder = minIoManagerUseCase.queryFoldersByPath(
+                val folder = minIoQueryUseCase.queryFoldersByPath(
                     bucket
                 )
                 emitFolderPathUiStateValue {
@@ -167,7 +166,7 @@ class HomeViewModel @Inject constructor(
                 subTitlePath.forEach {
                     folderPath.append("$it/")
                 }
-                val folder = minIoManagerUseCase.queryFoldersByPath(
+                val folder = minIoQueryUseCase.queryFoldersByPath(
                     bucket,
                     folderPath.toString()
                 )
@@ -198,7 +197,7 @@ class HomeViewModel @Inject constructor(
             subTitlePath.forEach {
                 folderPath.append("$it/")
             }
-            val folderList = minIoManagerUseCase.queryFoldersByPath(
+            val folderList = minIoQueryUseCase.queryFoldersByPath(
                 it1,
                 folderPath.toString(),
                 false
@@ -237,7 +236,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             uiState.value.topBarUiState.bucket?.let {
                 val deleteFiles = uiState.value.pagerUiState.selectorFolders
-                minIoManagerUseCase.deleteFile(it, deleteFiles)
+                minIoDeleteUseCase.deleteFile(it, deleteFiles)
                 updatePagerData()
                 emitSnackBarUiStateValue {
                     it.copy("删除成功", SnackBarType.FAIL)
